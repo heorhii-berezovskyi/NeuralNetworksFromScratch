@@ -12,12 +12,12 @@ from numpy import dot
 
 from numpy.random import randn
 
-from dataset.DatasetLoader import DatasetLoader
+from neural_nets.dataset import DatasetLoader
 
-from utils.DatasetProcessingUtils import preprocess_dataset
-from utils.DatasetProcessingUtils import split_into_labels_and_data
-from utils.DatasetProcessingUtils import sample
-from utils.PlotUtils import plot
+from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
+from neural_nets.utils.DatasetProcessingUtils import split_into_labels_and_data
+from neural_nets.utils.DatasetProcessingUtils import sample
+from neural_nets.utils.PlotUtils import plot
 
 import argparse
 
