@@ -8,7 +8,7 @@ from numpy import dot
 from numpy.random import randn
 from numpy import empty
 
-from neural_nets.dataset import DatasetLoader
+from neural_nets.dataset.DatasetLoader import DatasetLoader
 
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
 from neural_nets.utils.DatasetProcessingUtils import sample

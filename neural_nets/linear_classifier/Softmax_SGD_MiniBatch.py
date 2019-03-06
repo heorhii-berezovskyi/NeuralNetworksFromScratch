@@ -10,7 +10,7 @@ from numpy import zeros
 from numpy import empty
 from numpy.random import rand
 
-from neural_nets.dataset import DatasetLoader
+from neural_nets.dataset.DatasetLoader import DatasetLoader
 
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
 from neural_nets.utils.DatasetProcessingUtils import sample

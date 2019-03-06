@@ -11,7 +11,7 @@ from numpy import dot
 from numpy.random import randn
 from numpy.random import shuffle
 
-from neural_nets.dataset import DatasetLoader
+from neural_nets.dataset.DatasetLoader import DatasetLoader
 
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
 from neural_nets.utils.DatasetProcessingUtils import split_into_labels_and_data
