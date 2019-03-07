@@ -7,6 +7,7 @@ from numpy import ndarray
 
 from neural_nets.dataset.DatasetLoader import DatasetLoader
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
+from neural_nets.model.SVM_Loss import SVM_Loss
 from neural_nets.model.Layer import Layer
 from neural_nets.model.Linear import Linear
 from neural_nets.model.Relu import Relu
@@ -91,7 +92,9 @@ def run(args):
     linear_layer1 = Linear(args.num_of_hidden_neurons, (args.size_of_input_vector, args.batch_size))
     relu_layer = Relu((args.num_of_hidden_neurons, args.batch_size))
     linear_layer2 = Linear(args.num_of_classes, (args.num_of_hidden_neurons, args.batch_size))
-    loss_layer = CrossEntropyLoss((args.num_of_classes, args.batch_size))
+
+    # loss_layer = CrossEntropyLoss((args.num_of_classes, args.batch_size))
+    loss_layer = SVM_Loss((args.num_of_classes, args.batch_size), 10.0)
 
     model = Model(reg=args.reg)
     model.add_layer(linear_layer1)

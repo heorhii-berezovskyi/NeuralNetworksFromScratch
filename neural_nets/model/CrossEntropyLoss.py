@@ -27,8 +27,8 @@ class CrossEntropyLoss(Layer):
         correct_logprobs = -log(self.probs[labels, range(labels.size)])
 
         # Loss over a mini-batch.
-        loss = sum(correct_logprobs) / labels.size
-        return loss
+        data_loss = sum(correct_logprobs) / labels.size
+        return data_loss
 
     def backward(self):
         labels, scores = self.input.pop()

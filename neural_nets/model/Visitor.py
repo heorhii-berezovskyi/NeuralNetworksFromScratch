@@ -1,13 +1,14 @@
 from abc import ABCMeta, abstractmethod
 
-from numpy import sum
-from numpy import ndarray
 from numpy import dot
 from numpy import multiply
+from numpy import ndarray
+from numpy import sum
 
+from neural_nets.model import Relu
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Linear import Linear
-from neural_nets.model import Relu
+from neural_nets.model.SVM_Loss import SVM_Loss
 
 NOT_IMPLEMENTED = "You should implement this."
 
@@ -27,6 +28,10 @@ class Visitor:
     def visit_cross_entropy_loss(self, layer: CrossEntropyLoss):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
+    @abstractmethod
+    def visit_svm_loss(self, layer: SVM_Loss):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
 
 class RegularizationVisitor(Visitor):
     def __init__(self, reg_strength: float):
@@ -40,6 +45,9 @@ class RegularizationVisitor(Visitor):
         pass
 
     def visit_cross_entropy_loss(self, layer: CrossEntropyLoss):
+        pass
+
+    def visit_svm_loss(self, layer: SVM_Loss):
         pass
 
     def get_reg_loss(self):
@@ -62,6 +70,9 @@ class GradientUpdateVisitor(Visitor):
         self.new_loss_grad.append(multiply(self.loss_grad, self.updating_loss_grad_term))
 
     def visit_cross_entropy_loss(self, layer: CrossEntropyLoss):
+        pass
+
+    def visit_svm_loss(self, layer: SVM_Loss):
         pass
 
     def get_updated_loss_gradient(self):
