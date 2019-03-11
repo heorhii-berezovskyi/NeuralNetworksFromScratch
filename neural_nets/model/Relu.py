@@ -1,25 +1,26 @@
-from numpy import empty
 from numpy import maximum
 from numpy import ndarray
+from numpy import multiply
 
 from neural_nets.model.Layer import Layer
 
 
 class Relu(Layer):
-    def __init__(self, input_dim: tuple):
-        self.scores = empty(input_dim)
-        self.input = []
+    def __init__(self):
+        self.act = None
+        self.input = None
 
     def forward(self, input_data: ndarray):
-        self.input.append(input_data)
-        self.scores = maximum(0.0, input_data)
-        return self.scores
+        self.input = input_data
+        self.act = maximum(0.0, input_data)
+        return self.act
 
-    def backward(self):
-        input_data = self.input.pop()
-        drelu_input_data = self.scores
-        drelu_input_data[input_data > 0.0] = 1.0
-        return drelu_input_data
+    def backward(self, dout: ndarray):
+        input_data = self.input
+        dact_input_data = self.act
+        dact_input_data[input_data > 0.0] = 1.0
+        dinput_data = multiply(dout, dact_input_data)
+        return dinput_data
 
     def accept(self, visitor):
         visitor.visit_relu(self)

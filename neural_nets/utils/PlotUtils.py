@@ -9,7 +9,6 @@ def plot(losses: list, test_accuracies: list):
     plt.xlabel('Iteration')
     plt.ylabel('Loss')
     plt.plot(losses)
-    plt.ylim(0, 1)
 
     plt.subplot(212)
     plt.xlabel('Epoch')

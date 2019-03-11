@@ -1,21 +1,17 @@
-from numpy import amax
-from numpy import empty
-from numpy import exp
-from numpy import log
-from numpy import sum
 from numpy import maximum
+from numpy import ndarray
 
 from neural_nets.model.Layer import Layer
 
 
 class SVM_Loss(Layer):
-    def __init__(self, input_dim: tuple, delta: float):
+    def __init__(self, delta: float):
         self.delta = delta
-        self.margins = empty(input_dim)
-        self.input = []
+        self.margins = None
+        self.input = None
 
     def forward(self, labels_and_scores: tuple):
-        self.input.append(labels_and_scores)
+        self.input = labels_and_scores
         labels, scores = labels_and_scores
 
         self.margins = maximum(0.0, scores[:, range(labels.size)] - scores[labels, range(labels.size)] + self.delta)
@@ -24,8 +20,8 @@ class SVM_Loss(Layer):
         data_loss = self.margins.sum() / labels.size
         return data_loss
 
-    def backward(self):
-        labels, scores = self.input.pop()
+    def backward(self, dout: ndarray):
+        labels, scores = self.input
 
         indicators = self.margins
         indicators[indicators > 0.0] = 1.0
@@ -36,6 +32,3 @@ class SVM_Loss(Layer):
 
         dL_dscores = dL_dLi * dLi_dscores
         return dL_dscores
-
-    def accept(self, visitor):
-        visitor.visit_svm_loss(self)

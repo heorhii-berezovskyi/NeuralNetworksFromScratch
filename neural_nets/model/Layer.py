@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+from numpy import ndarray
+
 NOT_IMPLEMENTED = "You should implement this."
 
 
@@ -11,7 +13,7 @@ class Layer:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def backward(self):
+    def backward(self, dout: ndarray):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod

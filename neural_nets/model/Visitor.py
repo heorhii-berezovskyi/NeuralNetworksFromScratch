@@ -6,9 +6,8 @@ from numpy import ndarray
 from numpy import sum
 
 from neural_nets.model import Relu
-from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
+from neural_nets.model.BatchNorm import BatchNorm
 from neural_nets.model.Linear import Linear
-from neural_nets.model.SVM_Loss import SVM_Loss
 
 NOT_IMPLEMENTED = "You should implement this."
 
@@ -25,11 +24,7 @@ class Visitor:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def visit_cross_entropy_loss(self, layer: CrossEntropyLoss):
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-    @abstractmethod
-    def visit_svm_loss(self, layer: SVM_Loss):
+    def visit_batch_norm(self, layer: BatchNorm):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 
@@ -41,13 +36,10 @@ class RegularizationVisitor(Visitor):
     def visit_linear(self, layer: Linear):
         self.reg_loss += 0.5 * self.reg_strength * sum(layer.W * layer.W)
 
+    def visit_batch_norm(self, layer: BatchNorm):
+        pass
+
     def visit_relu(self, layer: Relu):
-        pass
-
-    def visit_cross_entropy_loss(self, layer: CrossEntropyLoss):
-        pass
-
-    def visit_svm_loss(self, layer: SVM_Loss):
         pass
 
     def get_reg_loss(self):
@@ -55,25 +47,27 @@ class RegularizationVisitor(Visitor):
 
 
 class GradientUpdateVisitor(Visitor):
-    def __init__(self, loss_grad: ndarray, updating_loss_grad_term: ndarray, reg_strength: float, lr: float):
-        self.loss_grad = loss_grad
-        self.updating_loss_grad_term = updating_loss_grad_term
+    def __init__(self, reg_strength: float, lr: float):
         self.reg_strength = reg_strength
         self.lr = lr
-        self.new_loss_grad = []
 
     def visit_linear(self, layer: Linear):
-        layer.update_layer_weights(grad=self.loss_grad, reg=self.reg_strength, lr=self.lr)
-        self.new_loss_grad.append(dot(self.updating_loss_grad_term.T, self.loss_grad))
+        layer.update_layer_weights(reg=self.reg_strength, lr=self.lr)
+
+    def visit_batch_norm(self, layer: BatchNorm):
+        layer.update_layer_weights(lr=self.lr)
 
     def visit_relu(self, layer: Relu):
-        self.new_loss_grad.append(multiply(self.loss_grad, self.updating_loss_grad_term))
-
-    def visit_cross_entropy_loss(self, layer: CrossEntropyLoss):
         pass
 
-    def visit_svm_loss(self, layer: SVM_Loss):
+
+class TestTimeRunner(Visitor):
+
+    def visit_linear(self, layer: Linear):
         pass
 
-    def get_updated_loss_gradient(self):
-        return self.new_loss_grad.pop()
+    def visit_batch_norm(self, layer: BatchNorm):
+        layer.mode = 'test'
+
+    def visit_relu(self, layer: Relu):
+        pass
