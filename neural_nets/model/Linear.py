@@ -29,11 +29,5 @@ class Linear(Layer):
     def get_layer_weights(self):
         return self.W, self.b
 
-    def update_layer_weights(self, reg: float, lr: float):
-        self.dW += reg * self.W
-
-        self.W -= lr * self.dW
-        self.b -= lr * self.db
-
     def accept(self, visitor):
         visitor.visit_linear(self)

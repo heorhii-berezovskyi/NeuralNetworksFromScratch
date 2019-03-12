@@ -1,8 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-from numpy import dot
-from numpy import multiply
-from numpy import ndarray
 from numpy import sum
 
 from neural_nets.model import Relu
@@ -46,16 +43,20 @@ class RegularizationVisitor(Visitor):
         return self.reg_loss
 
 
-class GradientUpdateVisitor(Visitor):
+class SGDMiniBatchUpdater(Visitor):
     def __init__(self, reg_strength: float, lr: float):
         self.reg_strength = reg_strength
         self.lr = lr
 
     def visit_linear(self, layer: Linear):
-        layer.update_layer_weights(reg=self.reg_strength, lr=self.lr)
+        layer.dW += self.reg_strength * layer.W
+
+        layer.W -= self.lr * layer.dW
+        layer.b -= self.lr * layer.db
 
     def visit_batch_norm(self, layer: BatchNorm):
-        layer.update_layer_weights(lr=self.lr)
+        layer.gamma -= self.lr * layer.dgamma
+        layer.beta -= self.lr * layer.dbeta
 
     def visit_relu(self, layer: Relu):
         pass

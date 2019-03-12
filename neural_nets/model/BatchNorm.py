@@ -36,7 +36,6 @@ class BatchNorm(Layer):
             self.mu = mean(input_data, axis=1, keepdims=True)
             self.var = var(input_data, axis=1, keepdims=True)
 
-            # assert self.mu.shape == (800, 1)
             self.running_mean = self.momentum * self.running_mean + (1 - self.momentum) * self.mu
             self.running_var = self.momentum * self.running_var + (1 - self.momentum) * self.var
 
@@ -61,12 +60,10 @@ class BatchNorm(Layer):
         dX_norm = dout * self.gamma
         dvar = sum(dX_norm * X_mu, axis=1, keepdims=True) * -.5 * std_inv ** 3
 
-        # assert dvar.shape == (800, 1)
         dmu = sum(dX_norm * -std_inv, axis=1, keepdims=True) + dvar * mean(-2. * X_mu, axis=1, keepdims=True)
 
         dX = (dX_norm * std_inv) + (dvar * 2 * X_mu / N) + (dmu / N)
 
-        # assert dX.shape == (800, 64)
         self.dgamma = sum(dout * self.X_norm, axis=1, keepdims=True)
         self.dbeta = sum(dout, axis=1, keepdims=True)
 
@@ -74,11 +71,6 @@ class BatchNorm(Layer):
 
     def get_layer_weights(self):
         return self.gamma, self.beta
-
-    def update_layer_weights(self, lr: float):
-        self.gamma -= lr * self.dgamma
-        # assert self.gamma.shape == (800, 1)
-        self.beta -= lr * self.dbeta
 
     def accept(self, visitor):
         visitor.visit_batch_norm(self)

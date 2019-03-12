@@ -10,7 +10,7 @@ from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Layer import Layer
 from neural_nets.model.Linear import Linear
 from neural_nets.model.Relu import Relu
-from neural_nets.model.Visitor import GradientUpdateVisitor
+from neural_nets.model.Visitor import SGDMiniBatchUpdater
 from neural_nets.model.Visitor import RegularizationVisitor
 from neural_nets.model.Visitor import TestTimeRunner
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
@@ -69,7 +69,7 @@ class Model:
         Updates weights of model layers.
         :param lr: is a specified learning rate.
         """
-        visitor = GradientUpdateVisitor(reg_strength=self.reg, lr=lr)
+        visitor = SGDMiniBatchUpdater(reg_strength=self.reg, lr=lr)
         for layer in reversed(self.layers[:-1]):
             layer.accept(visitor)
 
@@ -121,7 +121,9 @@ def run(args):
     # learning_rates = [0.0001, 0.0001 / 2.0, 0.0001 / 4.0, 0.0001 / 8.0, 0.0001 / 16.0]
     # learning_rates = [0.001, 0.001 / 2.0, 0.001 / 4.0, 0.001 / 8.0, 0.001 / 16.0]
     # learning_rates = [0.01, 0.01 / 2.0, 0.01 / 4.0, 0.01 / 8.0, 0.01 / 16.0]
-    learning_rates = [0.05, 0.05 / 2.0, 0.05 / 4.0, 0.05 / 8.0, 0.05 / 16.0]
+    # learning_rates = [0.05, 0.05 / 2.0, 0.05 / 4.0, 0.05 / 8.0, 0.05 / 16.0]
+
+    learning_rates = [0.05, 0.05, 0.05, 0.05, 0.05]
     for lr in learning_rates:
         for i in range(10000):
             batch = sample(train_dataset, args.batch_size)
