@@ -26,8 +26,11 @@ class BatchNorm(Layer):
 
         self.running_mean = zeros((input_dim, 1))
         self.running_var = zeros((input_dim, 1))
-
         self.momentum = momentum
+
+        # Velocity in the Momentum update for gamma and beta.
+        self.v_gamma = zeros((input_dim, 1))
+        self.v_beta = zeros((input_dim, 1))
 
     def forward(self, input_data: ndarray):
         if self.mode == 'train':
@@ -74,3 +77,14 @@ class BatchNorm(Layer):
 
     def accept(self, visitor):
         visitor.visit_batch_norm(self)
+
+    def update_with_sgd(self, lr: float):
+        self.gamma -= lr * self.dgamma
+        self.beta -= lr * self.dbeta
+
+    def update_with_sgd_momentum(self, mu: float, lr: float):
+        self.v_gamma = mu * self.v_gamma - lr * self.dgamma
+        self.gamma += self.v_gamma
+
+        self.v_beta = mu * self.v_beta - lr * self.dbeta
+        self.beta += self.v_beta

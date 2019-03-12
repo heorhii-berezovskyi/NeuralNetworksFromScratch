@@ -43,20 +43,32 @@ class RegularizationVisitor(Visitor):
         return self.reg_loss
 
 
-class SGDMiniBatchUpdater(Visitor):
+class SGDUpdater(Visitor):
     def __init__(self, reg_strength: float, lr: float):
         self.reg_strength = reg_strength
         self.lr = lr
 
     def visit_linear(self, layer: Linear):
-        layer.dW += self.reg_strength * layer.W
-
-        layer.W -= self.lr * layer.dW
-        layer.b -= self.lr * layer.db
+        layer.update_with_sgd(reg=self.reg_strength, lr=self.lr)
 
     def visit_batch_norm(self, layer: BatchNorm):
-        layer.gamma -= self.lr * layer.dgamma
-        layer.beta -= self.lr * layer.dbeta
+        layer.update_with_sgd(lr=self.lr)
+
+    def visit_relu(self, layer: Relu):
+        pass
+
+
+class SGDMomentumUpdater(Visitor):
+    def __init__(self, reg_strength: float, lr: float, mu: float):
+        self.reg_strength = reg_strength
+        self.lr = lr
+        self.mu = mu
+
+    def visit_linear(self, layer: Linear):
+        layer.update_with_sgd_momentum(reg=self.reg_strength, mu=self.mu, lr=self.lr)
+
+    def visit_batch_norm(self, layer: BatchNorm):
+        layer.update_with_sgd_momentum(mu=self.mu, lr=self.lr)
 
     def visit_relu(self, layer: Relu):
         pass

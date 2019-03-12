@@ -10,7 +10,8 @@ from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Layer import Layer
 from neural_nets.model.Linear import Linear
 from neural_nets.model.Relu import Relu
-from neural_nets.model.Visitor import SGDMiniBatchUpdater
+from neural_nets.model.Visitor import SGDUpdater
+from neural_nets.model.Visitor import SGDMomentumUpdater
 from neural_nets.model.Visitor import RegularizationVisitor
 from neural_nets.model.Visitor import TestTimeRunner
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
@@ -26,9 +27,10 @@ class Model:
     Neural net model representative class. Model can be comprised of different type, size and count of layers.
     """
 
-    def __init__(self, reg: float):
+    def __init__(self, reg: float, update_type: str):
         self.layers = []
         self.reg = reg
+        self.update_type = update_type
 
     def add_layer(self, layer: Layer):
         """
@@ -64,12 +66,18 @@ class Model:
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
 
-    def train_on_batch(self, lr: float):
+    def train_on_batch(self, lr: float, mu=None):
         """
         Updates weights of model layers.
         :param lr: is a specified learning rate.
+        :param mu: is a momentum constant for Momentum update.
         """
-        visitor = SGDMiniBatchUpdater(reg_strength=self.reg, lr=lr)
+        if self.update_type == 'sgd':
+            visitor = SGDUpdater(reg_strength=self.reg, lr=lr)
+        elif self.update_type == 'momentum':
+            visitor = SGDMomentumUpdater(reg_strength=self.reg, lr=lr, mu=mu)
+        else:
+            raise ValueError('Unknown update rule "%s"' % self.update_type)
         for layer in reversed(self.layers[:-1]):
             layer.accept(visitor)
 
@@ -99,7 +107,7 @@ def run(args):
     loss_layer = CrossEntropyLoss()
     # loss_layer = SVM_Loss(10.0)
 
-    model = Model(reg=args.reg)
+    model = Model(reg=args.reg, update_type='momentum')
     model.add_layer(linear_layer1)
     model.add_layer(batch_norm1)
     model.add_layer(relu_laye1)
@@ -124,13 +132,14 @@ def run(args):
     # learning_rates = [0.05, 0.05 / 2.0, 0.05 / 4.0, 0.05 / 8.0, 0.05 / 16.0]
 
     learning_rates = [0.05, 0.05, 0.05, 0.05, 0.05]
-    for lr in learning_rates:
+    momentum = [0.5, 0.7, 0.9, 0.95, 0.99]
+    for lr, mu in zip(learning_rates, momentum):
         for i in range(10000):
             batch = sample(train_dataset, args.batch_size)
             label_batch, image_batch = split_into_labels_and_data(batch)
             losses.append(model.forward(label_batch, image_batch))
             model.backward()
-            model.train_on_batch(lr)
+            model.train_on_batch(lr, mu=mu)
         test_accuracies.append(model.test(test_labels, test_data))
         train_accuracies.append(model.test(train_labels, train_data))
         print('complete')
