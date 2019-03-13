@@ -14,7 +14,10 @@ class Linear(Layer):
 
         # Velocity in the Momentum update for W and b.
         self.v_W = np.zeros((num_of_neurons, input_dim))
+        self.v_W_prev = np.zeros((num_of_neurons, input_dim))
+
         self.v_b = np.zeros((num_of_neurons, 1))
+        self.v_b_prev = np.zeros((num_of_neurons, 1))
 
     def forward(self, input_data: ndarray):
         self.input = input_data

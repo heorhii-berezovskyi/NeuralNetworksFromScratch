@@ -16,11 +16,10 @@ class CrossEntropyLoss(Loss):
 
         exp_scores = np.exp(scores)
         # Calculating probabilities for each class over a mini-batch.
-        probs = exp_scores / np.sum(exp_scores, axis=0, keepdims=True)
-        self.probs = probs
+        self.probs = exp_scores / np.sum(exp_scores, axis=0, keepdims=True)
 
         # Losses of each image.
-        correct_logprobs = -np.log(probs[labels, range(labels.size)])
+        correct_logprobs = -np.log(self.probs[labels, range(labels.size)])
 
         # Loss over a mini-batch.
         data_loss = np.sum(correct_logprobs) / labels.size

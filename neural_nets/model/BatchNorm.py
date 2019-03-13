@@ -25,7 +25,10 @@ class BatchNorm(Layer):
 
         # Velocity in the Momentum update for gamma and beta.
         self.v_gamma = np.zeros((input_dim, 1))
+        self.v_gamma_prev = np.zeros((input_dim, 1))
+
         self.v_beta = np.zeros((input_dim, 1))
+        self.v_beta_prev = np.zeros((input_dim, 1))
 
     def forward(self, input_data: ndarray):
         if self.mode == 'train':

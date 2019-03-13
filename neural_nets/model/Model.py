@@ -11,7 +11,7 @@ from neural_nets.model.Layer import Layer
 from neural_nets.model.Linear import Linear
 from neural_nets.model.Relu import Relu
 from neural_nets.model.Loss import Loss
-from neural_nets.model.Optimizer import SGD, SGDMomentum
+from neural_nets.model.Optimizer import SGD, SGDMomentum, SGDNesterovMomentum
 from neural_nets.model.Visitor import RegularizationVisitor, ModeTuningVisitor
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
 from neural_nets.utils.PlotUtils import plot
@@ -22,10 +22,9 @@ class Model:
     Neural net model representative class. Model can be comprised of different type, size and count of layers.
     """
 
-    def __init__(self, reg: float, update_type: str, loss_function: Loss):
+    def __init__(self, reg: float, loss_function: Loss):
         self.layers = []
         self.reg = reg
-        self.update_type = update_type
         self.loss_function = loss_function
 
         self.reg_visitor = RegularizationVisitor(reg_strength=reg)
@@ -95,14 +94,15 @@ def run(args):
     loss = CrossEntropyLoss()
     # loss = SVM_Loss(10.0)
 
-    model = Model(reg=args.reg, update_type='momentum', loss_function=loss)
+    model = Model(reg=args.reg, loss_function=loss)
     model.add_layer(linear_layer1)
     model.add_layer(batch_norm1)
     model.add_layer(relu_laye1)
     model.add_layer(linear_layer2)
 
     # optimizer = SGD(model.layers, learning_rate=0.01, reg=args.reg)
-    optimizer = SGDMomentum(model.layers, learning_rate=0.01, reg=args.reg, mu=0.9)
+    # optimizer = SGDMomentum(model.layers, learning_rate=0.01, reg=args.reg, mu=0.9)
+    optimizer = SGDNesterovMomentum(model.layers, learning_rate=0.01, reg=args.reg, mu=0.9)
 
     loader = DatasetLoader(args.directory)
     train_dataset, test_dataset = loader.load(args.train_dataset_name, args.test_dataset_name)
