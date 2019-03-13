@@ -1,38 +1,33 @@
-from numpy import amax
-from numpy import exp
-from numpy import log
+import numpy as np
 from numpy import ndarray
-from numpy import sum
 
-from neural_nets.model.Layer import Layer
+from neural_nets.model.Loss import Loss
 
 
-class CrossEntropyLoss(Layer):
+class CrossEntropyLoss(Loss):
     def __init__(self):
+        self.labels = None
         self.probs = None
-        self.input = None
 
-    def forward(self, labels_and_scores: tuple):
-        self.input = labels_and_scores
-        labels, scores = labels_and_scores
-
+    def eval_data_loss(self, labels: ndarray, scores: ndarray):
+        self.labels = labels
         # Subtracting min values from scores for numeric stability.
-        scores -= amax(scores, axis=0)
+        scores -= np.amax(scores, axis=0)
 
-        exp_scores = exp(scores)
+        exp_scores = np.exp(scores)
         # Calculating probabilities for each class over a mini-batch.
-        probs = exp_scores / sum(exp_scores, axis=0, keepdims=True)
+        probs = exp_scores / np.sum(exp_scores, axis=0, keepdims=True)
         self.probs = probs
 
         # Losses of each image.
-        correct_logprobs = -log(probs[labels, range(labels.size)])
+        correct_logprobs = -np.log(probs[labels, range(labels.size)])
 
         # Loss over a mini-batch.
-        data_loss = sum(correct_logprobs) / labels.size
+        data_loss = np.sum(correct_logprobs) / labels.size
         return data_loss
 
-    def backward(self, dout: ndarray):
-        labels, scores = self.input
+    def eval_gradient(self):
+        labels = self.labels
         dL_dLi = 1.0 / labels.size
 
         # dLi_scores = probs[k] - 1(yi = k)

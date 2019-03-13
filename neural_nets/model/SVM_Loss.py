@@ -1,27 +1,25 @@
-from numpy import maximum
+import numpy as np
 from numpy import ndarray
 
-from neural_nets.model.Layer import Layer
+from neural_nets.model.Loss import Loss
 
 
-class SVM_Loss(Layer):
+class SVM_Loss(Loss):
     def __init__(self, delta: float):
         self.delta = delta
         self.margins = None
-        self.input = None
+        self.labels = None
 
-    def forward(self, labels_and_scores: tuple):
-        self.input = labels_and_scores
-        labels, scores = labels_and_scores
-
-        self.margins = maximum(0.0, scores[:, range(labels.size)] - scores[labels, range(labels.size)] + self.delta)
+    def eval_data_loss(self, labels: ndarray, scores: ndarray):
+        self.labels = labels
+        self.margins = np.maximum(0.0, scores[:, range(labels.size)] - scores[labels, range(labels.size)] + self.delta)
         self.margins[labels, range(labels.size)] = 0.0
 
         data_loss = self.margins.sum() / labels.size
         return data_loss
 
-    def backward(self, dout: ndarray):
-        labels, scores = self.input
+    def eval_gradient(self):
+        labels = self.labels
 
         indicators = self.margins
         indicators[indicators > 0.0] = 1.0

@@ -1,7 +1,7 @@
 import argparse
 
-from numpy import argmax
-from numpy import mean
+import matplotlib.pyplot as plt
+import numpy as np
 from numpy import ndarray
 
 from neural_nets.dataset.DatasetLoader import DatasetLoader
@@ -10,16 +10,11 @@ from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Layer import Layer
 from neural_nets.model.Linear import Linear
 from neural_nets.model.Relu import Relu
-from neural_nets.model.Visitor import SGDUpdater
-from neural_nets.model.Visitor import SGDMomentumUpdater
-from neural_nets.model.Visitor import RegularizationVisitor
-from neural_nets.model.Visitor import TestTimeRunner
-from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset
-from neural_nets.utils.DatasetProcessingUtils import sample
-from neural_nets.utils.DatasetProcessingUtils import split_into_labels_and_data
+from neural_nets.model.Loss import Loss
+from neural_nets.model.Optimizer import SGD, SGDMomentum
+from neural_nets.model.Visitor import RegularizationVisitor, ModeTuningVisitor
+from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
 from neural_nets.utils.PlotUtils import plot
-
-import matplotlib.pyplot as plt
 
 
 class Model:
@@ -27,10 +22,14 @@ class Model:
     Neural net model representative class. Model can be comprised of different type, size and count of layers.
     """
 
-    def __init__(self, reg: float, update_type: str):
+    def __init__(self, reg: float, update_type: str, loss_function: Loss):
         self.layers = []
         self.reg = reg
         self.update_type = update_type
+        self.loss_function = loss_function
+
+        self.reg_visitor = RegularizationVisitor(reg_strength=reg)
+        self.mode_visitor = ModeTuningVisitor()
 
     def add_layer(self, layer: Layer):
         """
@@ -39,47 +38,36 @@ class Model:
         """
         self.layers.append(layer)
 
-    def forward(self, labels: ndarray, images: ndarray):
+    def forward(self, images: ndarray):
         """
         Computes forward propagation on each layer.
-        :param labels: is a training labels.
-        :param images: is a training images.
-        :return: model loss.
+        :param images: is a numpy array of training images.
+        :return: model scores.
         """
-        visitor = RegularizationVisitor(reg_strength=self.reg)
         input_data = images.T
-        for layer in self.layers[:-1]:
+        for layer in self.layers:
             output_data = layer.forward(input_data)
-            layer.accept(visitor)
             input_data = output_data
-        data_loss = self.layers[-1].forward((labels, input_data))
-        reg_loss = visitor.get_reg_loss()
+        scores = input_data
+        return scores
+
+    def eval_loss(self, labels: ndarray, scores: ndarray):
+        self.reg_visitor.reset()
+        for layer in self.layers:
+            layer.accept(self.reg_visitor)
+        reg_loss = self.reg_visitor.get_reg_loss()
+        data_loss = self.loss_function.eval_data_loss(labels=labels, scores=scores)
         loss = data_loss + reg_loss
         return loss
 
     def backward(self):
         """
-        Performs backward propagation and gathers gradients of each layer by previous layer.
+        Performs backward propagation through layers.
         """
 
-        dout = 1.0
+        dout = self.loss_function.eval_gradient()
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
-
-    def train_on_batch(self, lr: float, mu=None):
-        """
-        Updates weights of model layers.
-        :param lr: is a specified learning rate.
-        :param mu: is a momentum constant for Momentum update.
-        """
-        if self.update_type == 'sgd':
-            visitor = SGDUpdater(reg_strength=self.reg, lr=lr)
-        elif self.update_type == 'momentum':
-            visitor = SGDMomentumUpdater(reg_strength=self.reg, lr=lr, mu=mu)
-        else:
-            raise ValueError('Unknown update rule "%s"' % self.update_type)
-        for layer in reversed(self.layers[:-1]):
-            layer.accept(visitor)
 
     def test(self, labels: ndarray, images: ndarray):
         """
@@ -87,15 +75,15 @@ class Model:
         :param labels: is a batch of labels.
         :param images: is a batch of images.
         """
-        input_data = images.T
-        visitor = TestTimeRunner()
-        for layer in self.layers[:-1]:
-            layer.accept(visitor)
-            output_data = layer.forward(input_data)
-            input_data = output_data
-        predicted_class = argmax(input_data, axis=0)
-        accuracy = mean(predicted_class == labels)
+        scores = self.forward(images=images)
+        predicted_class = np.argmax(scores, axis=0)
+        accuracy = np.mean(predicted_class == labels)
         return accuracy
+
+    def set_mode(self, mode: str):
+        self.mode_visitor.set_mode(mode)
+        for layer in self.layers:
+            layer.accept(self.mode_visitor)
 
 
 def run(args):
@@ -104,15 +92,17 @@ def run(args):
     relu_laye1 = Relu()
     linear_layer2 = Linear(args.num_of_classes, args.num_of_hidden_neurons)
 
-    loss_layer = CrossEntropyLoss()
-    # loss_layer = SVM_Loss(10.0)
+    loss = CrossEntropyLoss()
+    # loss = SVM_Loss(10.0)
 
-    model = Model(reg=args.reg, update_type='momentum')
+    model = Model(reg=args.reg, update_type='momentum', loss_function=loss)
     model.add_layer(linear_layer1)
     model.add_layer(batch_norm1)
     model.add_layer(relu_laye1)
     model.add_layer(linear_layer2)
-    model.add_layer(loss_layer)
+
+    # optimizer = SGD(model.layers, learning_rate=0.01, reg=args.reg)
+    optimizer = SGDMomentum(model.layers, learning_rate=0.01, reg=args.reg, mu=0.9)
 
     loader = DatasetLoader(args.directory)
     train_dataset, test_dataset = loader.load(args.train_dataset_name, args.test_dataset_name)
@@ -126,23 +116,26 @@ def run(args):
     test_accuracies = []
     train_accuracies = []
 
-    # learning_rates = [0.0001, 0.0001 / 2.0, 0.0001 / 4.0, 0.0001 / 8.0, 0.0001 / 16.0]
-    # learning_rates = [0.001, 0.001 / 2.0, 0.001 / 4.0, 0.001 / 8.0, 0.001 / 16.0]
-    # learning_rates = [0.01, 0.01 / 2.0, 0.01 / 4.0, 0.01 / 8.0, 0.01 / 16.0]
-    # learning_rates = [0.05, 0.05 / 2.0, 0.05 / 4.0, 0.05 / 8.0, 0.05 / 16.0]
+    for i in range(50000):
+        batch = sample(train_dataset, args.batch_size)
+        label_batch, image_batch = split_into_labels_and_data(batch)
 
-    learning_rates = [0.05, 0.05, 0.05, 0.05, 0.05]
-    momentum = [0.5, 0.7, 0.9, 0.95, 0.99]
-    for lr, mu in zip(learning_rates, momentum):
-        for i in range(10000):
-            batch = sample(train_dataset, args.batch_size)
-            label_batch, image_batch = split_into_labels_and_data(batch)
-            losses.append(model.forward(label_batch, image_batch))
-            model.backward()
-            model.train_on_batch(lr, mu=mu)
-        test_accuracies.append(model.test(test_labels, test_data))
-        train_accuracies.append(model.test(train_labels, train_data))
-        print('complete')
+        model.set_mode('train')
+        scores = model.forward(images=image_batch)
+        losses.append(model.eval_loss(labels=label_batch, scores=scores))
+        model.backward()
+        optimizer.step()
+
+        if i % 1000 == 0:
+            model.set_mode('test')
+            test_accuracy = model.test(test_labels, test_data)
+            test_accuracies.append(test_accuracy)
+            print('On iteration ' + str(i) + ' test accuracy: ', test_accuracy)
+
+            train_accuracy = model.test(train_labels, train_data)
+            train_accuracies.append(train_accuracy)
+            print('On iteration ' + str(i) + ' train accuracy: ', train_accuracy)
+            print('')
 
     plot(losses=losses, test_accuracies=test_accuracies)
 

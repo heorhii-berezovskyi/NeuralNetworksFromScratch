@@ -39,6 +39,9 @@ class RegularizationVisitor(Visitor):
     def visit_relu(self, layer: Relu):
         pass
 
+    def reset(self):
+        self.reg_loss = 0.0
+
     def get_reg_loss(self):
         return self.reg_loss
 
@@ -49,10 +52,14 @@ class SGDUpdater(Visitor):
         self.lr = lr
 
     def visit_linear(self, layer: Linear):
-        layer.update_with_sgd(reg=self.reg_strength, lr=self.lr)
+        layer.dW += self.reg_strength * layer.W
+
+        layer.W -= self.lr * layer.dW
+        layer.b -= self.lr * layer.db
 
     def visit_batch_norm(self, layer: BatchNorm):
-        layer.update_with_sgd(lr=self.lr)
+        layer.gamma -= self.lr * layer.dgamma
+        layer.beta -= self.lr * layer.dbeta
 
     def visit_relu(self, layer: Relu):
         pass
@@ -65,22 +72,37 @@ class SGDMomentumUpdater(Visitor):
         self.mu = mu
 
     def visit_linear(self, layer: Linear):
-        layer.update_with_sgd_momentum(reg=self.reg_strength, mu=self.mu, lr=self.lr)
+        layer.dW += self.reg_strength * layer.W
+
+        layer.v_W = self.mu * layer.v_W - self.lr * layer.dW
+        layer.W += layer.v_W
+
+        layer.v_b = self.mu * layer.v_b - self.lr * layer.db
+        layer.b += layer.v_b
 
     def visit_batch_norm(self, layer: BatchNorm):
-        layer.update_with_sgd_momentum(mu=self.mu, lr=self.lr)
+        layer.v_gamma = self.mu * layer.v_gamma - self.lr * layer.dgamma
+        layer.gamma += layer.v_gamma
+
+        layer.v_beta = self.mu * layer.v_beta - self.lr * layer.dbeta
+        layer.beta += layer.v_beta
 
     def visit_relu(self, layer: Relu):
         pass
 
 
-class TestTimeRunner(Visitor):
+class ModeTuningVisitor(Visitor):
+    def __init__(self):
+        self.mode = 'train'
+
+    def set_mode(self, mode: str):
+        self.mode = mode
 
     def visit_linear(self, layer: Linear):
         pass
 
     def visit_batch_norm(self, layer: BatchNorm):
-        layer.mode = 'test'
+        layer.mode = self.mode
 
     def visit_relu(self, layer: Relu):
         pass

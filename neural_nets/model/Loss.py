@@ -5,17 +5,14 @@ from numpy import ndarray
 NOT_IMPLEMENTED = "You should implement this."
 
 
-class Layer:
+class Loss:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def forward(self, input_data: ndarray):
+    def eval_data_loss(self, labels: ndarray, scores: ndarray):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def backward(self, dout: ndarray):
+    def eval_gradient(self):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
-    @abstractmethod
-    def accept(self, visitor):
-        raise NotImplementedError(NOT_IMPLEMENTED)
