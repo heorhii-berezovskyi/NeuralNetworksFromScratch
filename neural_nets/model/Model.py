@@ -9,10 +9,10 @@ from neural_nets.model.BatchNorm import BatchNorm
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Layer import Layer
 from neural_nets.model.Linear import Linear
-from neural_nets.model.Relu import Relu
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Optimizer import SGD, SGDMomentum, SGDNesterovMomentum
-from neural_nets.model.Visitor import RegularizationVisitor, ModeTuningVisitor
+from neural_nets.model.Relu import Relu
+from neural_nets.model.Visitor import WeightedLayersVisitor
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
 from neural_nets.utils.PlotUtils import plot
 
@@ -22,13 +22,11 @@ class Model:
     Neural net model representative class. Model can be comprised of different type, size and count of layers.
     """
 
-    def __init__(self, reg: float, loss_function: Loss):
+    def __init__(self, loss_function: Loss):
         self.layers = []
-        self.reg = reg
         self.loss_function = loss_function
 
-        self.reg_visitor = RegularizationVisitor(reg_strength=reg)
-        self.mode_visitor = ModeTuningVisitor()
+        self.weighted_layers_visitor = WeightedLayersVisitor()
 
     def add_layer(self, layer: Layer):
         """
@@ -51,12 +49,7 @@ class Model:
         return scores
 
     def eval_loss(self, labels: ndarray, scores: ndarray):
-        self.reg_visitor.reset()
-        for layer in self.layers:
-            layer.accept(self.reg_visitor)
-        reg_loss = self.reg_visitor.get_reg_loss()
-        data_loss = self.loss_function.eval_data_loss(labels=labels, scores=scores)
-        loss = data_loss + reg_loss
+        loss = self.loss_function.eval_data_loss(labels=labels, scores=scores)
         return loss
 
     def backward(self):
@@ -80,9 +73,15 @@ class Model:
         return accuracy
 
     def set_mode(self, mode: str):
-        self.mode_visitor.set_mode(mode)
+        weighted_layers = self.get_layers_with_weights()
+        for layer in weighted_layers:
+            layer.set_layer_mode(mode=mode)
+
+    def get_layers_with_weights(self):
+        self.weighted_layers_visitor.reset()
         for layer in self.layers:
-            layer.accept(self.mode_visitor)
+            layer.accept(self.weighted_layers_visitor)
+        return self.weighted_layers_visitor.get_layers_with_weights()
 
 
 def run(args):
@@ -94,15 +93,15 @@ def run(args):
     loss = CrossEntropyLoss()
     # loss = SVM_Loss(10.0)
 
-    model = Model(reg=args.reg, loss_function=loss)
+    model = Model(loss_function=loss)
     model.add_layer(linear_layer1)
     model.add_layer(batch_norm1)
     model.add_layer(relu_laye1)
     model.add_layer(linear_layer2)
 
-    # optimizer = SGD(model.layers, learning_rate=0.01, reg=args.reg)
-    # optimizer = SGDMomentum(model.layers, learning_rate=0.01, reg=args.reg, mu=0.9)
-    optimizer = SGDNesterovMomentum(model.layers, learning_rate=0.01, reg=args.reg, mu=0.9)
+    # optimizer = SGD(layers=model.get_layers_with_weights(), learning_rate=0.01)
+    # optimizer = SGDMomentum(layers=model.get_layers_with_weights(), learning_rate=0.01, mu=0.9)
+    optimizer = SGDNesterovMomentum(layers=model.get_layers_with_weights(), learning_rate=0.01, mu=0.9)
 
     loader = DatasetLoader(args.directory)
     train_dataset, test_dataset = loader.load(args.train_dataset_name, args.test_dataset_name)
@@ -116,7 +115,7 @@ def run(args):
     test_accuracies = []
     train_accuracies = []
 
-    for i in range(50000):
+    for i in range(10000):
         batch = sample(train_dataset, args.batch_size)
         label_batch, image_batch = split_into_labels_and_data(batch)
 

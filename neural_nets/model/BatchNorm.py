@@ -1,12 +1,12 @@
 import numpy as np
 from numpy import ndarray
 
-from neural_nets.model.Layer import Layer
+from neural_nets.model.Layer import LayerWithWeights
 
 
-class BatchNorm(Layer):
+class BatchNorm(LayerWithWeights):
     def __init__(self, input_dim: int, momentum: float):
-
+        super().__init__()
         self.mode = 'train'
         self.gamma = 0.01 * np.random.randn(input_dim, 1)
         self.beta = 0.01 * np.random.randn(input_dim, 1)
@@ -21,14 +21,9 @@ class BatchNorm(Layer):
 
         self.running_mean = np.zeros((input_dim, 1))
         self.running_var = np.zeros((input_dim, 1))
+
+        # Momentum constant for running mean and running variance.
         self.momentum = momentum
-
-        # Velocity in the Momentum update for gamma and beta.
-        self.v_gamma = np.zeros((input_dim, 1))
-        self.v_gamma_prev = np.zeros((input_dim, 1))
-
-        self.v_beta = np.zeros((input_dim, 1))
-        self.v_beta_prev = np.zeros((input_dim, 1))
 
     def forward(self, input_data: ndarray):
         if self.mode == 'train':
@@ -69,8 +64,18 @@ class BatchNorm(Layer):
 
         return dX
 
-    def get_layer_weights(self):
+    def set_layer_mode(self, mode: str):
+        self.mode = mode
+
+    def get_weights(self):
         return self.gamma, self.beta
 
+    def update_weights(self, w1: ndarray, w2: ndarray):
+        self.gamma += w1
+        self.beta += w2
+
+    def get_gradients(self):
+        return self.dgamma, self.dbeta
+
     def accept(self, visitor):
-        visitor.visit_batch_norm(self)
+        visitor.visit_layer_with_weights(self)

@@ -22,4 +22,4 @@ class Relu(Layer):
         return dinput_data
 
     def accept(self, visitor):
-        visitor.visit_relu(self)
+        visitor.visit_layer(self)

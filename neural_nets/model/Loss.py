@@ -15,4 +15,3 @@ class Loss:
     @abstractmethod
     def eval_gradient(self):
         raise NotImplementedError(NOT_IMPLEMENTED)
-
