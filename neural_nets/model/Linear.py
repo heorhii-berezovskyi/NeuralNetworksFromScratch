@@ -1,43 +1,86 @@
 import numpy as np
 from numpy import ndarray
 
-from neural_nets.model.Layer import LayerWithWeights
+from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
+from neural_nets.model.Name import Name
+from neural_nets.model.Params import Params
 
 
-class Linear(LayerWithWeights):
+class LinearTest(TestModeLayer):
     def __init__(self, num_of_neurons: int, input_dim: int):
         super().__init__()
-        self.W = 0.01 * np.random.randn(num_of_neurons, input_dim)
-        self.b = np.zeros((num_of_neurons, 1))
-        self.input = None
-        self.dW = None
-        self.db = None
+        self.weights = self.create_weights(num_of_neurons=num_of_neurons, input_dim=input_dim)
 
-        self.mode = 'train'
+    def get_id(self):
+        return self.id
+
+    def get_name(self):
+        return Name.LINEAR_TEST
 
     def forward(self, input_data: ndarray):
-        self.input = input_data
-        scores = np.dot(self.W, input_data) + self.b
-        return scores
-
-    def backward(self, dout: ndarray):
-        self.dW = np.dot(dout, self.input.T)
-        self.db = np.sum(dout, axis=1, keepdims=True)
-        dinput = np.dot(self.W.T, dout)
-        return dinput
-
-    def set_layer_mode(self, mode: str):
-        self.mode = mode
+        output = np.dot(self.weights.get(name=Name.WEIGHTS), input_data) + self.weights.get(name=Name.BIASES)
+        return output
 
     def get_weights(self):
-        return self.W, self.b
+        return self.weights
 
-    def get_gradients(self):
-        return self.dW, self.db
+    @staticmethod
+    def create_weights(num_of_neurons: int, input_dim: int):
+        weights = Params()
+        weights.add(name=Name.WEIGHTS, value=0.01 * np.random.rand(num_of_neurons, input_dim))
+        weights.add(name=Name.BIASES, value=np.zeros((num_of_neurons, 1)))
+        return weights
 
-    def update_weights(self, w1: ndarray, w2: ndarray):
-        self.W += w1
-        self.b += w2
+
+class LinearTrain(TrainModeLayer):
+    def __init__(self, num_of_neurons: int, input_dim: int):
+        super().__init__()
+        self.num_of_neurons = num_of_neurons
+        self.input_dim = input_dim
+        self.weights = self.create_weights(num_of_neurons=num_of_neurons, input_dim=input_dim)
+
+    def get_id(self):
+        return self.id
+
+    def get_name(self):
+        return Name.LINEAR_TRAIN
+
+    def get_weights(self):
+        return self.weights
+
+    def forward(self, input_data: ndarray, test_model_params: dict):
+        output_data = np.dot(self.weights.get(name=Name.WEIGHTS), input_data) + self.weights.get(name=Name.BIASES)
+        layer_forward_run = Params()
+        layer_forward_run.add(name=Name.INPUT, value=input_data)
+        layer_forward_run.add(name=Name.OUTPUT, value=output_data)
+        return layer_forward_run
+
+    def backward(self, dout: ndarray, layer_forward_run: Params):
+        input_data = layer_forward_run.get(name=Name.INPUT)
+        layer_backward_run = Params()
+
+        dweights = np.dot(dout, input_data.T)
+        layer_backward_run.add(name=Name.D_WEIGHTS, value=dweights)
+
+        dbiases = np.sum(dout, axis=1, keepdims=True)
+        layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
+
+        dinput = np.dot(self.weights.get(name=Name.WEIGHTS).T, dout)
+        return dinput, layer_backward_run
+
+    def to_test(self, test_model_params: dict):
+        weights = self.weights
+        layer = LinearTest(self.num_of_neurons, self.input_dim)
+        layer.get_weights().update(name=Name.WEIGHTS, value=weights.get(name=Name.WEIGHTS))
+        layer.get_weights().update(name=Name.BIASES, value=weights.get(name=Name.BIASES))
+        return layer
 
     def accept(self, visitor):
-        visitor.visit_layer_with_weights(self)
+        visitor.visit_linear(self)
+
+    @staticmethod
+    def create_weights(num_of_neurons: int, input_dim: int):
+        weights = Params()
+        weights.add(name=Name.WEIGHTS, value=0.01 * np.random.rand(num_of_neurons, input_dim))
+        weights.add(name=Name.BIASES, value=np.zeros((num_of_neurons, 1)))
+        return weights
