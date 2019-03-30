@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from neural_nets.model.Params import Params
+from neural_nets.model.Cache import Cache
 
 from numpy import ndarray
 
@@ -14,5 +14,5 @@ class Loss:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def eval_gradient(self, loss_run: Params):
+    def eval_gradient(self, loss_run: Cache):
         raise NotImplementedError(NOT_IMPLEMENTED)

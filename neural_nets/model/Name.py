@@ -6,10 +6,12 @@ class Name(Enum):
     LINEAR_TRAIN = 'Linear in train mode'
     RELU_TRAIN = 'ReLU in train mode'
     BATCH_NORM_TRAIN = 'BatchNorm in train mode'
+    CONV2D_TRAIN = 'Convolutional in train mode'
 
     LINEAR_TEST = 'Linear in test mode'
     RELU_TEST = 'ReLU in test mode'
     BATCH_NORM_TEST = 'BatchNorm in test mode'
+    CONV2D_TEST = 'Convolutional in test mode'
 
     # Weights names.
     WEIGHTS = 'weights'
@@ -30,6 +32,8 @@ class Name(Enum):
     PROBS = 'probabilities of each class for Cross Entropy Loss'
     LOSS = 'loss value on data'
     MARGINS = 'margins between scores and correct scores in SVM Loss'
+    X_COLS = 'image reshaped to columns of patches'
+    RESHAPED_INPUT_DATA = 'image reshaped to matrix [N X D]'
 
     # Gradients of a linear layer.
     D_WEIGHTS = 'weights gradient'

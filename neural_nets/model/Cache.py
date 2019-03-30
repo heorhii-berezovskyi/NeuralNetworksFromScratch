@@ -4,7 +4,7 @@ from neural_nets.model.Exception import ParamAlreadyExistsException, ParamNotFou
 from neural_nets.model.Name import Name
 
 
-class Params:
+class Cache:
     def __init__(self):
         self.params = {}
 

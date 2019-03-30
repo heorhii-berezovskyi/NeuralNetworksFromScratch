@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 from numpy import ndarray
 
-from neural_nets.model.Params import Params
+from neural_nets.model.Cache import Cache
 
 NOT_IMPLEMENTED = "You should implement this."
 
@@ -38,7 +38,7 @@ class TrainModeLayer:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def backward(self, dout: ndarray, layer_forward_run: Params):
+    def backward(self, dout: ndarray, layer_forward_run: Cache):
         """
         Performs a backward pass of a layer, based on the layer forward run and the gradient by this layer.
         :param dout: is a gradient by this layer.

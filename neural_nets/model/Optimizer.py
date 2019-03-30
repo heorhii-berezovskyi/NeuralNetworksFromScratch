@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Model import TrainModel
-from neural_nets.model.Params import Params
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Visitor import SGDWeightsUpdateVisitor, SGDMomentumParamsInitVisitor, \
     SGDMomentumWeightsUpdateVisitor, \
     SGDNesterovMomentumParamsInitVisitor, SGDNesterovMomentumWeightsUpdateVisitor
@@ -19,7 +19,7 @@ class Optimizer:
     def __init__(self, model: TrainModel):
         self.model = model
 
-    def backward(self, loss_function: Loss, model_forward_run: list, loss_run: Params):
+    def backward(self, loss_function: Loss, model_forward_run: list, loss_run: Cache):
         """
         Performs backward pass of a train model based on the loss function, model forward run and loss function run.
         :param loss_function: is a loss function.

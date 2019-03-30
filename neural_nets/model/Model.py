@@ -28,11 +28,11 @@ class TestModel:
         :param images: is an image batch to compute accuracy on.
         :return: float value of accuracy in a range [0, 1].
         """
-        input_data = images.T
+        input_data = images
         for layer in self.layers:
             output_data = layer.forward(input_data)
             input_data = output_data
-        predicted_class = np.argmax(input_data, axis=0)
+        predicted_class = np.argmax(input_data, axis=1)
         accuracy = np.mean(predicted_class == labels)
         return accuracy
 
@@ -72,7 +72,7 @@ class TrainModel:
         :param images: is a batch of training images.
         :return: model forward run – list of parameters, saved by each layer through a forward pass.
         """
-        input_data = images.T
+        input_data = images
         model_forward_run = []
         for layer in self.layers:
             layer_forward_run = layer.forward(input_data, test_model_params)

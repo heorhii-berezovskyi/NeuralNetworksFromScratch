@@ -1,9 +1,9 @@
 import numpy as np
 from numpy import ndarray
 
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Params import Params
 
 
 class ReluTest(TestModeLayer):
@@ -33,16 +33,16 @@ class ReluTrain(TrainModeLayer):
 
     def forward(self, input_data: ndarray, test_model_params: dict):
         output_data = np.maximum(0.0, input_data)
-        layer_forward_run = Params()
+        layer_forward_run = Cache()
         layer_forward_run.add(name=Name.INPUT, value=input_data)
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Params):
-        layer_backward_run = Params()
-        dact_input_data = layer_forward_run.get(name=Name.OUTPUT)
-        dact_input_data[layer_forward_run.get(name=Name.INPUT) > 0.0] = 1.0
-        dinput = np.multiply(dout, dact_input_data)
+    def backward(self, dout: ndarray, layer_forward_run: Cache):
+        input_data = layer_forward_run.get(name=Name.INPUT)
+        dinput = np.array(dout, copy=True)
+        dinput[input_data <= 0.0] = 0.0
+        layer_backward_run = Cache()
         return dinput, layer_backward_run
 
     def to_test(self, test_model_params: dict):

@@ -3,7 +3,7 @@ from numpy import ndarray
 
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Params import Params
+from neural_nets.model.Cache import Cache
 
 
 class BatchNormTest(TestModeLayer):
@@ -34,14 +34,14 @@ class BatchNormTest(TestModeLayer):
 
     @staticmethod
     def create_weights(input_dim: int):
-        weights = Params()
+        weights = Cache()
         weights.add(name=Name.GAMMA, value=0.01 * np.random.rand(input_dim, 1))
         weights.add(name=Name.BETA, value=0.01 * np.random.rand(input_dim, 1))
         return weights
 
     @staticmethod
     def create_params(input_dim: int):
-        params = Params()
+        params = Cache()
         params.add(name=Name.RUNNING_MEAN, value=np.zeros((input_dim, 1)))
         params.add(name=Name.RUNNING_VARIANCE, value=np.zeros((input_dim, 1)))
         return params
@@ -67,7 +67,7 @@ class BatchNormTrain(TrainModeLayer):
         return self.momentum
 
     def forward(self, input_data: ndarray, test_model_params: dict):
-        layer_forward_run = Params()
+        layer_forward_run = Cache()
         layer_forward_run.add(name=Name.INPUT, value=input_data)
 
         mu = np.mean(input_data, axis=1, keepdims=True)
@@ -89,8 +89,8 @@ class BatchNormTrain(TrainModeLayer):
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Params):
-        layer_backward_run = Params()
+    def backward(self, dout: ndarray, layer_forward_run: Cache):
+        layer_backward_run = Cache()
 
         input_data = layer_forward_run.get(name=Name.INPUT)
         N = input_data.shape[1]
@@ -128,7 +128,7 @@ class BatchNormTrain(TrainModeLayer):
 
     @staticmethod
     def create_weights(input_dim: int):
-        weights = Params()
+        weights = Cache()
         weights.add(name=Name.GAMMA, value=0.01 * np.random.rand(input_dim, 1))
         weights.add(name=Name.BETA, value=0.01 * np.random.rand(input_dim, 1))
         return weights

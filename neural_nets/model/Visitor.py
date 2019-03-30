@@ -3,9 +3,10 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from neural_nets.model.BatchNorm import BatchNormTrain
+from neural_nets.model.Cache import Cache
+from neural_nets.model.Conv2D import Conv2DTrain
 from neural_nets.model.Linear import LinearTrain
 from neural_nets.model.Name import Name
-from neural_nets.model.Params import Params
 from neural_nets.model.Relu import ReluTrain
 
 NOT_IMPLEMENTED = "You should implement this."
@@ -19,6 +20,10 @@ class Visitor:
 
     @abstractmethod
     def visit_linear(self, layer: LinearTrain):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def visit_conv2d(self, layer: Conv2DTrain):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
@@ -41,11 +46,14 @@ class TestModelInitVisitor(Visitor):
     def visit_linear(self, layer: LinearTrain):
         pass
 
+    def visit_conv2d(self, layer: Conv2DTrain):
+        pass
+
     def visit_relu(self, layer: ReluTrain):
         pass
 
     def visit_batch_norm(self, layer: BatchNormTrain):
-        params = Params()
+        params = Cache()
         params.add(name=Name.RUNNING_MEAN, value=np.zeros_like(layer.get_weights().get(Name.GAMMA)))
         params.add(name=Name.RUNNING_VARIANCE, value=np.zeros_like(layer.get_weights().get(Name.GAMMA)))
         self.result[layer.get_id()] = params
@@ -64,6 +72,22 @@ class SGDWeightsUpdateVisitor(Visitor):
         self.model_backward_run = model_backward_run
 
     def visit_linear(self, layer: LinearTrain):
+        layer_backward_run = self.model_backward_run.pop()
+        layer_weights = layer.get_weights()
+
+        weights = layer_weights.get(name=Name.WEIGHTS)
+        biases = layer_weights.get(name=Name.BIASES)
+
+        dweights = layer_backward_run.get(Name.D_WEIGHTS)
+        dbiases = layer_backward_run.get(Name.D_BIASES)
+
+        weights -= self.lr * dweights
+        biases -= self.lr * dbiases
+
+        layer.get_weights().update(name=Name.WEIGHTS, value=weights)
+        layer.get_weights().update(name=Name.BIASES, value=biases)
+
+    def visit_conv2d(self, layer: Conv2DTrain):
         layer_backward_run = self.model_backward_run.pop()
         layer_weights = layer.get_weights()
 
@@ -104,7 +128,13 @@ class SGDMomentumParamsInitVisitor(Visitor):
         self.params = {}
 
     def visit_linear(self, layer: LinearTrain):
-        layer_velocity = Params()
+        layer_velocity = Cache()
+        layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(layer.get_weights().get(name=Name.WEIGHTS)))
+        layer_velocity.add(name=Name.V_BIASES, value=np.zeros_like(layer.get_weights().get(name=Name.BIASES)))
+        self.params[layer.get_id()] = layer_velocity
+
+    def visit_conv2d(self, layer: Conv2DTrain):
+        layer_velocity = Cache()
         layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(layer.get_weights().get(name=Name.WEIGHTS)))
         layer_velocity.add(name=Name.V_BIASES, value=np.zeros_like(layer.get_weights().get(name=Name.BIASES)))
         self.params[layer.get_id()] = layer_velocity
@@ -113,7 +143,7 @@ class SGDMomentumParamsInitVisitor(Visitor):
         pass
 
     def visit_batch_norm(self, layer: BatchNormTrain):
-        layer_velocity = Params()
+        layer_velocity = Cache()
         layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
         layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(layer.get_weights().get(name=Name.BETA)))
         self.params[layer.get_id()] = layer_velocity
@@ -130,6 +160,31 @@ class SGDMomentumWeightsUpdateVisitor(Visitor):
         self.velocity_params = velocity_params
 
     def visit_linear(self, layer: LinearTrain):
+        layer_id = layer.get_id()
+
+        layer_backward_run = self.model_backward_run.pop()
+        layer_weights = layer.get_weights()
+
+        weights = layer_weights.get(name=Name.WEIGHTS)
+        biases = layer_weights.get(name=Name.BIASES)
+
+        dweights = layer_backward_run.get(Name.D_WEIGHTS)
+        dbiases = layer_backward_run.get(Name.D_BIASES)
+
+        v_weights = self.velocity_params[layer_id].get(Name.V_WEIGHTS)
+        v_weights = self.mu * v_weights - self.lr * dweights
+        self.velocity_params[layer_id].update(Name.V_WEIGHTS, v_weights)
+        weights += v_weights
+
+        v_biases = self.velocity_params[layer_id].get(Name.V_BIASES)
+        v_biases = self.mu * v_biases - self.lr * dbiases
+        self.velocity_params[layer_id].update(Name.V_BIASES, v_biases)
+        biases += v_biases
+
+        layer.get_weights().update(name=Name.WEIGHTS, value=weights)
+        layer.get_weights().update(name=Name.BIASES, value=biases)
+
+    def visit_conv2d(self, layer: Conv2DTrain):
         layer_id = layer.get_id()
 
         layer_backward_run = self.model_backward_run.pop()
@@ -188,7 +243,16 @@ class SGDNesterovMomentumParamsInitVisitor(Visitor):
         self.params = {}
 
     def visit_linear(self, layer: LinearTrain):
-        layer_velocity = Params()
+        layer_velocity = Cache()
+        layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(layer.get_weights().get(name=Name.WEIGHTS)))
+        layer_velocity.add(name=Name.V_WEIGHTS_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.WEIGHTS)))
+
+        layer_velocity.add(name=Name.V_BIASES, value=np.zeros_like(layer.get_weights().get(name=Name.BIASES)))
+        layer_velocity.add(name=Name.V_BIASES_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.BIASES)))
+        self.params[layer.get_id()] = layer_velocity
+
+    def visit_conv2d(self, layer: Conv2DTrain):
+        layer_velocity = Cache()
         layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(layer.get_weights().get(name=Name.WEIGHTS)))
         layer_velocity.add(name=Name.V_WEIGHTS_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.WEIGHTS)))
 
@@ -200,7 +264,7 @@ class SGDNesterovMomentumParamsInitVisitor(Visitor):
         pass
 
     def visit_batch_norm(self, layer: BatchNormTrain):
-        layer_velocity = Params()
+        layer_velocity = Cache()
         layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
         layer_velocity.add(name=Name.V_GAMMA_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
 
@@ -220,6 +284,33 @@ class SGDNesterovMomentumWeightsUpdateVisitor(Visitor):
         self.velocity_params = velocity_params
 
     def visit_linear(self, layer: LinearTrain):
+        layer_id = layer.get_id()
+
+        layer_backward_run = self.model_backward_run.pop()
+        layer_weights = layer.get_weights()
+
+        weights = layer_weights.get(name=Name.WEIGHTS)
+        biases = layer_weights.get(name=Name.BIASES)
+
+        dweights = layer_backward_run.get(Name.D_WEIGHTS)
+        dbiases = layer_backward_run.get(Name.D_BIASES)
+
+        v_weights = self.velocity_params[layer_id].get(Name.V_WEIGHTS)
+        self.velocity_params[layer_id].update(Name.V_WEIGHTS_PREV, v_weights)
+        v_weights = self.mu * v_weights - self.lr * dweights
+        self.velocity_params[layer_id].update(Name.V_WEIGHTS, v_weights)
+        weights += -self.mu * self.velocity_params[layer_id].get(Name.V_WEIGHTS_PREV) + (1.0 + self.mu) * v_weights
+
+        v_biases = self.velocity_params[layer_id].get(Name.V_BIASES)
+        self.velocity_params[layer_id].update(Name.V_BIASES_PREV, v_biases)
+        v_biases = self.mu * v_biases - self.lr * dbiases
+        self.velocity_params[layer_id].update(Name.V_BIASES, v_biases)
+        biases += -self.mu * self.velocity_params[layer_id].get(Name.V_BIASES_PREV) + (1.0 + self.mu) * v_biases
+
+        layer.get_weights().update(name=Name.WEIGHTS, value=weights)
+        layer.get_weights().update(name=Name.BIASES, value=biases)
+
+    def visit_conv2d(self, layer: Conv2DTrain):
         layer_id = layer.get_id()
 
         layer_backward_run = self.model_backward_run.pop()

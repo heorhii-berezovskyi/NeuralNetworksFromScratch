@@ -3,7 +3,7 @@ from numpy import ndarray
 
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
-from neural_nets.model.Params import Params
+from neural_nets.model.Cache import Cache
 
 
 class SVMLoss(Loss):
@@ -11,29 +11,26 @@ class SVMLoss(Loss):
         super().__init__()
         self.delta = delta
 
-    def get_delta(self):
-        return self.delta
-
     def eval_data_loss(self, labels: ndarray, model_forward_run: list):
-        scores = model_forward_run[-1].get(Name.OUTPUT)
-        loss_run = Params()
-        loss_run.add(name=Name.LABELS, value=labels)
-        margins = np.maximum(0.0, scores[:, range(labels.size)] - scores[labels, range(labels.size)] + self.delta)
-        margins[labels, range(labels.size)] = 0.0
-        loss_run.add(name=Name.MARGINS, value=margins)
+        input_data = model_forward_run[-1].get(Name.OUTPUT)
+        num_of_samples = labels.size
+        correct_class_scores = input_data[np.arange(num_of_samples), labels]
+        margins = np.maximum(0.0, input_data - correct_class_scores[:, np.newaxis] + self.delta)
+        margins[np.arange(num_of_samples), labels] = 0.0
+        data_loss = np.sum(margins) / num_of_samples
 
-        data_loss = margins.sum() / labels.size
+        loss_run = Cache()
+        loss_run.add(name=Name.LABELS, value=labels)
+        loss_run.add(name=Name.MARGINS, value=margins)
         return data_loss, loss_run
 
-    def eval_gradient(self, loss_run: Params):
+    def eval_gradient(self, loss_run: Cache):
         labels = loss_run.get(name=Name.LABELS)
-
-        indicators = loss_run.get(name=Name.MARGINS)
-        indicators[indicators > 0.0] = 1.0
-        indicators[labels, range(labels.size)] = -indicators[:, range(labels.size)].sum(axis=0)
-
-        dL_dLi = 1.0 / labels.size
-        dLi_dscores = indicators
-
-        dL_dscores = dL_dLi * dLi_dscores
-        return dL_dscores
+        margins = loss_run.get(name=Name.MARGINS)
+        num_of_samples = labels.size
+        num_pos = np.sum(margins > 0.0, axis=1)
+        dinput = np.zeros_like(margins, dtype=float)
+        dinput[margins > 0.0] = 1.0
+        dinput[np.arange(num_of_samples), labels] -= num_pos
+        dinput /= num_of_samples
+        return dinput
