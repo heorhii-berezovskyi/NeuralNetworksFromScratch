@@ -1,9 +1,9 @@
 import numpy as np
 from numpy import ndarray
 
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
-from neural_nets.model.Cache import Cache
 
 
 class CrossEntropyLoss(Loss):
@@ -11,13 +11,13 @@ class CrossEntropyLoss(Loss):
         super().__init__()
 
     def eval_data_loss(self, labels: ndarray, model_forward_run: list):
-        input_data = model_forward_run[-1].get(Name.OUTPUT)
-        probs = input_data - np.max(input_data, axis=1, keepdims=True)
-        probs = np.exp(probs)
-        probs[probs == 0.0] += 10 ** -7
-        probs /= np.sum(probs, axis=1, keepdims=True)
-        num_of_samples = labels.size
-        data_loss = -np.sum(np.log(probs[np.arange(num_of_samples), labels])) / float(num_of_samples)
+        scores = model_forward_run[-1].get(Name.OUTPUT)
+        shifted_logits = scores - np.max(scores, axis=1, keepdims=True)
+        Z = np.sum(np.exp(shifted_logits), axis=1, keepdims=True)
+        log_probs = shifted_logits - np.log(Z)
+        probs = np.exp(log_probs)
+        N = scores.shape[0]
+        data_loss = -np.sum(log_probs[np.arange(N), labels]) / N
 
         loss_run = Cache()
         loss_run.add(name=Name.LABELS, value=labels)
@@ -27,8 +27,8 @@ class CrossEntropyLoss(Loss):
     def eval_gradient(self, loss_run: Cache):
         labels = loss_run.get(name=Name.LABELS)
         probs = loss_run.get(name=Name.PROBS)
+        N = labels.size
         dinput = probs.copy()
-        num_of_samples = labels.size
-        dinput[np.arange(num_of_samples), labels] -= 1.0
-        dinput /= float(num_of_samples)
+        dinput[np.arange(N), labels] -= 1
+        dinput /= N
         return dinput

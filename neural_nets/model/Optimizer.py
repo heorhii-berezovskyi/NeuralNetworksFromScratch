@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
 
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Model import TrainModel
-from neural_nets.model.Cache import Cache
 from neural_nets.model.Visitor import SGDWeightsUpdateVisitor, SGDMomentumParamsInitVisitor, \
     SGDMomentumWeightsUpdateVisitor, \
     SGDNesterovMomentumParamsInitVisitor, SGDNesterovMomentumWeightsUpdateVisitor
@@ -92,7 +92,8 @@ class SGDNesterovMomentum(Optimizer):
 
     def step(self, model_backward_run: list):
         model_backward_run.reverse()
-        visitor = SGDNesterovMomentumWeightsUpdateVisitor(learning_rate=self.lr, mu=self.mu,
+        visitor = SGDNesterovMomentumWeightsUpdateVisitor(learning_rate=self.lr,
+                                                          mu=self.mu,
                                                           model_backward_run=model_backward_run,
                                                           velocity_params=self.velocity_params)
         for layer in reversed(self.model.get_layers()):

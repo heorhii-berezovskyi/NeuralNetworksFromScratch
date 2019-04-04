@@ -8,18 +8,14 @@ from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indi
 
 
 class Conv2DTest(TestModeLayer):
-    def __init__(self, num_filters: int, filter_depth: int, filter_height: int, filter_width: int, stride: int,
-                 padding: int):
+    def __init__(self, weights: Cache, stride: int, padding: int):
         super().__init__()
-        self.num_filters = num_filters
-        self.filter_height = filter_height
-        self.filter_width = filter_width
+        self.weights = weights
+        self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
+        self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
+        self.filter_width = weights.get(name=Name.WEIGHTS).shape[3]
         self.stride = stride
         self.padding = padding
-        self.weights = self.create_weights(num_filters=num_filters,
-                                           filter_depth=filter_depth,
-                                           filter_height=filter_height,
-                                           filter_width=filter_width)
 
     def get_id(self):
         return self.id
@@ -39,9 +35,8 @@ class Conv2DTest(TestModeLayer):
         assert (H + 2 * self.padding - self.filter_height) % self.stride == 0, 'height does not work'
 
         # Create output
-        out_height = int((H + 2 * self.padding - self.filter_height) / self.stride + 1)
-        out_width = int((W + 2 * self.padding - self.filter_width) / self.stride + 1)
-        # output_data = np.zeros((N, num_filters, out_height, out_width), dtype=input_data.dtype)
+        out_h = (H + 2 * self.padding - self.filter_height) // self.stride + 1
+        out_w = (W + 2 * self.padding - self.filter_width) // self.stride + 1
 
         x_cols = im2col_indices(x=input_data,
                                 field_height=self.filter_height,
@@ -52,21 +47,12 @@ class Conv2DTest(TestModeLayer):
         weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
         res = weights.reshape((self.num_filters, -1)) @ x_cols + biases.reshape(-1, 1)
 
-        output_data = res.reshape(self.num_filters, out_height, out_width, N)
+        output_data = res.reshape(self.num_filters, out_h, out_w, N)
         output_data = output_data.transpose(3, 0, 1, 2)
         return output_data
 
     def get_weights(self):
         return self.weights
-
-    @staticmethod
-    def create_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int):
-        weights = Cache()
-        weights.add(name=Name.WEIGHTS,
-                    value=0.01 * np.random.rand(num_filters, filter_depth, filter_height, filter_width))
-
-        weights.add(name=Name.BIASES, value=np.zeros(num_filters))
-        return weights
 
 
 class Conv2DTrain(TrainModeLayer):
@@ -110,7 +96,6 @@ class Conv2DTrain(TrainModeLayer):
         # Create output
         out_height = int((H + 2 * self.padding - self.filter_height) / self.stride + 1)
         out_width = int((W + 2 * self.padding - self.filter_width) / self.stride + 1)
-        # output_data = np.zeros((N, num_filters, out_height, out_width), dtype=input_data.dtype)
 
         x_cols = im2col_indices(x=input_data,
                                 field_height=self.filter_height,
@@ -133,15 +118,16 @@ class Conv2DTrain(TrainModeLayer):
           A fast implementation of the backward pass for a convolutional layer
           based on im2col and col2im.
         """
+        weights = self.weights.get(name=Name.WEIGHTS)
         input_data, x_cols = layer_forward_run.get(name=Name.INPUT), layer_forward_run.get(name=Name.X_COLS)
 
         dbiases = np.sum(dout, axis=(0, 2, 3))
 
-        weights_shape = self.weights.get(name=Name.WEIGHTS).shape
+        weights_shape = weights.shape
         dout_reshaped = dout.transpose((1, 2, 3, 0)).reshape(self.num_filters, -1)
         dweights = dout_reshaped.dot(x_cols.T).reshape(weights_shape)
 
-        dx_cols = self.weights.get(name=Name.WEIGHTS).reshape(self.num_filters, -1).T.dot(dout_reshaped)
+        dx_cols = weights.reshape(self.num_filters, -1).T @ dout_reshaped
         dinput = col2im_indices(cols=dx_cols,
                                 x_shape=input_data.shape,
                                 field_height=self.filter_height,
@@ -156,14 +142,9 @@ class Conv2DTrain(TrainModeLayer):
 
     def to_test(self, test_model_params: dict):
         weights = self.weights
-        layer = Conv2DTest(num_filters=self.num_filters,
-                           filter_depth=self.filter_depth,
-                           filter_height=self.filter_height,
-                           filter_width=self.filter_width,
+        layer = Conv2DTest(weights=weights,
                            padding=self.padding,
                            stride=self.stride)
-        layer.get_weights().update(name=Name.WEIGHTS, value=weights.get(name=Name.WEIGHTS))
-        layer.get_weights().update(name=Name.BIASES, value=weights.get(name=Name.BIASES))
         return layer
 
     def accept(self, visitor):
@@ -173,7 +154,8 @@ class Conv2DTrain(TrainModeLayer):
     def create_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int):
         weights = Cache()
         weights.add(name=Name.WEIGHTS,
-                    value=0.01 * np.random.rand(num_filters, filter_depth, filter_height, filter_width))
+                    value=np.random.rand(num_filters, filter_depth, filter_height, filter_width) * np.sqrt(
+                        2. / (filter_depth * filter_height * filter_width)))
 
         weights.add(name=Name.BIASES, value=np.zeros(num_filters))
         return weights

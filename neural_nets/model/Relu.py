@@ -17,7 +17,7 @@ class ReluTest(TestModeLayer):
         return Name.RELU_TEST
 
     def forward(self, input_data: ndarray):
-        output = np.maximum(0.0, input_data)
+        output = np.maximum(0., input_data)
         return output
 
 
@@ -40,8 +40,7 @@ class ReluTrain(TrainModeLayer):
 
     def backward(self, dout: ndarray, layer_forward_run: Cache):
         input_data = layer_forward_run.get(name=Name.INPUT)
-        dinput = np.array(dout, copy=True)
-        dinput[input_data <= 0.0] = 0.0
+        dinput = np.where(input_data > 0.0, dout, 0.0)
         layer_backward_run = Cache()
         return dinput, layer_backward_run
 

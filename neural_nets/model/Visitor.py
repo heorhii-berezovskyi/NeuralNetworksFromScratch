@@ -2,10 +2,13 @@ from abc import ABCMeta, abstractmethod
 
 import numpy as np
 
-from neural_nets.model.BatchNorm import BatchNormTrain
+from neural_nets.model.BatchNorm1D import BatchNorm1DTrain
+from neural_nets.model.BatchNorm2D import BatchNorm2DTrain
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Conv2D import Conv2DTrain
+from neural_nets.model.Dropout1D import Dropout2DTrain
 from neural_nets.model.Linear import LinearTrain
+from neural_nets.model.MaxPool import MaxPoolTrain
 from neural_nets.model.Name import Name
 from neural_nets.model.Relu import ReluTrain
 
@@ -31,7 +34,19 @@ class Visitor:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def visit_dropout1d(self, layer: Dropout2DTrain):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 
@@ -52,10 +67,22 @@ class TestModelInitVisitor(Visitor):
     def visit_relu(self, layer: ReluTrain):
         pass
 
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        pass
+
+    def visit_dropout1d(self, layer: Dropout2DTrain):
+        pass
+
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
         params = Cache()
         params.add(name=Name.RUNNING_MEAN, value=np.zeros_like(layer.get_weights().get(Name.GAMMA)))
         params.add(name=Name.RUNNING_VARIANCE, value=np.zeros_like(layer.get_weights().get(Name.GAMMA)))
+        self.result[layer.get_id()] = params
+
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
+        params = Cache()
+        params.add(name=Name.RUNNING_MEAN, value=np.zeros(layer.get_num_of_channels()))
+        params.add(name=Name.RUNNING_VARIANCE, value=np.zeros(layer.get_num_of_channels()))
         self.result[layer.get_id()] = params
 
     def get_init_test_model_params(self):
@@ -106,7 +133,29 @@ class SGDWeightsUpdateVisitor(Visitor):
     def visit_relu(self, layer: ReluTrain):
         self.model_backward_run.pop()
 
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        self.model_backward_run.pop()
+
+    def visit_dropout1d(self, layer: Dropout2DTrain):
+        self.model_backward_run.pop()
+
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
+        layer_backward_run = self.model_backward_run.pop()
+        layer_weights = layer.get_weights()
+
+        gamma = layer_weights.get(name=Name.GAMMA)
+        beta = layer_weights.get(name=Name.BETA)
+
+        dgamma = layer_backward_run.get(Name.D_GAMMA)
+        dbeta = layer_backward_run.get(Name.D_BETA)
+
+        gamma -= self.lr * dgamma
+        beta -= self.lr * dbeta
+
+        layer.get_weights().update(name=Name.GAMMA, value=gamma)
+        layer.get_weights().update(name=Name.BETA, value=beta)
+
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
         layer_backward_run = self.model_backward_run.pop()
         layer_weights = layer.get_weights()
 
@@ -142,7 +191,19 @@ class SGDMomentumParamsInitVisitor(Visitor):
     def visit_relu(self, layer: ReluTrain):
         pass
 
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        pass
+
+    def visit_dropout1d(self, layer: Dropout2DTrain):
+        pass
+
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
+        layer_velocity = Cache()
+        layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
+        layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(layer.get_weights().get(name=Name.BETA)))
+        self.params[layer.get_id()] = layer_velocity
+
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
         layer_velocity = Cache()
         layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
         layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(layer.get_weights().get(name=Name.BETA)))
@@ -212,7 +273,38 @@ class SGDMomentumWeightsUpdateVisitor(Visitor):
     def visit_relu(self, layer: ReluTrain):
         self.model_backward_run.pop()
 
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        self.model_backward_run.pop()
+
+    def visit_dropout1d(self, layer: Dropout2DTrain):
+        self.model_backward_run.pop()
+
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
+        layer_id = layer.get_id()
+
+        layer_backward_run = self.model_backward_run.pop()
+        layer_weights = layer.get_weights()
+
+        gamma = layer_weights.get(name=Name.GAMMA)
+        beta = layer_weights.get(name=Name.BETA)
+
+        dgamma = layer_backward_run.get(Name.D_GAMMA)
+        dbeta = layer_backward_run.get(Name.D_BETA)
+
+        v_gamma = self.velocity_params[layer_id].get(Name.V_GAMMA)
+        v_gamma = self.mu * v_gamma - self.lr * dgamma
+        self.velocity_params[layer_id].update(Name.V_GAMMA, v_gamma)
+        gamma += v_gamma
+
+        v_beta = self.velocity_params[layer_id].get(Name.V_BETA)
+        v_beta = self.mu * v_beta - self.lr * dbeta
+        self.velocity_params[layer_id].update(Name.V_BETA, v_beta)
+        beta += v_beta
+
+        layer.get_weights().update(name=Name.GAMMA, value=gamma)
+        layer.get_weights().update(name=Name.BETA, value=beta)
+
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
         layer_id = layer.get_id()
 
         layer_backward_run = self.model_backward_run.pop()
@@ -263,7 +355,22 @@ class SGDNesterovMomentumParamsInitVisitor(Visitor):
     def visit_relu(self, layer: ReluTrain):
         pass
 
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        pass
+
+    def visit_dropout1d(self, layer: Dropout2DTrain):
+        pass
+
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
+        layer_velocity = Cache()
+        layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
+        layer_velocity.add(name=Name.V_GAMMA_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
+
+        layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(layer.get_weights().get(name=Name.BETA)))
+        layer_velocity.add(name=Name.V_BETA_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.BETA)))
+        self.params[layer.get_id()] = layer_velocity
+
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
         layer_velocity = Cache()
         layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
         layer_velocity.add(name=Name.V_GAMMA_PREV, value=np.zeros_like(layer.get_weights().get(name=Name.GAMMA)))
@@ -340,7 +447,40 @@ class SGDNesterovMomentumWeightsUpdateVisitor(Visitor):
     def visit_relu(self, layer: ReluTrain):
         self.model_backward_run.pop()
 
-    def visit_batch_norm(self, layer: BatchNormTrain):
+    def visit_max_pool(self, layer: MaxPoolTrain):
+        self.model_backward_run.pop()
+
+    def visit_dropout1d(self, layer: Dropout2DTrain):
+        self.model_backward_run.pop()
+
+    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
+        layer_id = layer.get_id()
+
+        layer_backward_run = self.model_backward_run.pop()
+        layer_weights = layer.get_weights()
+
+        gamma = layer_weights.get(name=Name.GAMMA)
+        beta = layer_weights.get(name=Name.BETA)
+
+        dgamma = layer_backward_run.get(Name.D_GAMMA)
+        dbeta = layer_backward_run.get(Name.D_BETA)
+
+        v_gamma = self.velocity_params[layer_id].get(Name.V_GAMMA)
+        self.velocity_params[layer_id].update(Name.V_GAMMA_PREV, v_gamma)
+        v_gamma = self.mu * v_gamma - self.lr * dgamma
+        self.velocity_params[layer_id].update(Name.V_GAMMA, v_gamma)
+        gamma += -self.mu * self.velocity_params[layer_id].get(Name.V_GAMMA_PREV) + (1.0 + self.mu) * v_gamma
+
+        v_beta = self.velocity_params[layer_id].get(Name.V_BETA)
+        self.velocity_params[layer_id].update(Name.V_BETA_PREV, v_beta)
+        v_beta = self.mu * v_beta - self.lr * dbeta
+        self.velocity_params[layer_id].update(Name.V_BETA, v_beta)
+        beta += -self.mu * self.velocity_params[layer_id].get(Name.V_BETA_PREV) + (1.0 + self.mu) * v_beta
+
+        layer.get_weights().update(name=Name.GAMMA, value=gamma)
+        layer.get_weights().update(name=Name.BETA, value=beta)
+
+    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
         layer_id = layer.get_id()
 
         layer_backward_run = self.model_backward_run.pop()
