@@ -61,6 +61,20 @@ class TrainModeLayer:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 
+class TrainModeLayerWithWeights(TrainModeLayer):
+    """
+    Representative of a trainable layer with weights.
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def get_weights(self):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+
 class TestModeLayer:
     """
     Test mode layer representative.

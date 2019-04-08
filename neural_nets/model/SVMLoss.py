@@ -15,8 +15,8 @@ class SVMLoss(Loss):
         input_data = model_forward_run[-1].get(Name.OUTPUT)
         num_of_samples = labels.size
         correct_class_scores = input_data[np.arange(num_of_samples), labels]
-        margins = np.maximum(0.0, input_data - correct_class_scores[:, np.newaxis] + self.delta)
-        margins[np.arange(num_of_samples), labels] = 0.0
+        margins = np.maximum(0., input_data - correct_class_scores[:, np.newaxis] + self.delta)
+        margins[np.arange(num_of_samples), labels] = 0.
         data_loss = np.sum(margins) / num_of_samples
 
         loss_run = Cache()
@@ -28,9 +28,9 @@ class SVMLoss(Loss):
         labels = loss_run.get(name=Name.LABELS)
         margins = loss_run.get(name=Name.MARGINS)
         num_of_samples = labels.size
-        num_pos = np.sum(margins > 0.0, axis=1)
+        num_pos = np.sum(margins > 0., axis=1)
         dinput = np.zeros_like(margins, dtype=float)
-        dinput[margins > 0.0] = 1.0
+        dinput[margins > 0.] = 1.
         dinput[np.arange(num_of_samples), labels] -= num_pos
         dinput /= num_of_samples
         return dinput

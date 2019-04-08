@@ -3,7 +3,7 @@ from numpy import ndarray
 
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TestModelInitVisitor
+from neural_nets.model.TestModelInitializer import TestModelInitVisitor
 
 
 class TestModel:
@@ -63,7 +63,7 @@ class TrainModel:
         visitor = TestModelInitVisitor()
         for layer in self.layers:
             layer.accept(visitor)
-        return visitor.get_init_test_model_params()
+        return visitor.get_result()
 
     def forward(self, test_model_params: dict, images: ndarray):
         """

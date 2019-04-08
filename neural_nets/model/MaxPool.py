@@ -56,8 +56,8 @@ class MaxPoolTrain(TrainModeLayer):
         assert (H - self.pool_height) % self.stride == 0, 'Invalid height'
         assert (W - self.pool_width) % self.stride == 0, 'Invalid width'
 
-        out_h = int(1 + (H - self.pool_height) / self.stride)
-        out_w = int(1 + (W - self.pool_width) / self.stride)
+        out_h = 1 + (H - self.pool_height) // self.stride
+        out_w = 1 + (W - self.pool_width) // self.stride
 
         x_split = input_data.reshape((N * C, 1, H, W))
         x_cols = im2col_indices(x_split, self.pool_height, self.pool_width, padding=0, stride=self.stride)

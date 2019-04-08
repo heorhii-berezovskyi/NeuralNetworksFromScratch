@@ -7,7 +7,8 @@ class Name(Enum):
     RELU_TRAIN = 'ReLU in train mode'
     BATCH_NORM_1D_TRAIN = 'BatchNorm1D in train mode'
     BATCH_NORM_2D_TRAIN = 'BatchNorm2D in train mode'
-    DROPOUT1D_TRAIN = 'Dropout in train mode'
+    DROPOUT1D_TRAIN = 'Dropout 1d in train mode'
+    DROPOUT2D_TRAIN = 'Spatial dropout in train mode'
     CONV2D_TRAIN = 'Convolutional in train mode'
     MAX_POOL_TRAIN = 'Max pool in train mode'
 
@@ -15,21 +16,24 @@ class Name(Enum):
     RELU_TEST = 'ReLU in test mode'
     BATCH_NORM_1D_TEST = 'BatchNorm1D in test mode'
     BATCH_NORM_2D_TEST = 'BatchNORM2D in test mode'
-    DROPOUT1D_TEST = 'Dropout in test mode'
+    DROPOUT1D_TEST = 'Dropout 1d in test mode'
+    DROPOUT2D_TEST = 'Spatial dropout in test mode'
     CONV2D_TEST = 'Convolutional in test mode'
     MAX_POOL_TEST = 'Max pool in test mode'
 
     # Weights names.
-    WEIGHTS = 'weights'
-    BIASES = 'biases'
+    KERNEL_WEIGHTS = 'weights in a convolutional layer'
+    KERNEL_BIASES = 'biases in a convolutional layer'
+    WEIGHTS = 'weights in a linear layer'
+    BIASES = 'biases in a linear layer'
     GAMMA = 'gamma'
     BETA = 'beta'
 
     # Parameter names.
     RUNNING_MEAN = 'running mean'
     RUNNING_VARIANCE = 'running variance'
-    MU = 'mini-batch mean'
-    VAR = 'mini-batch variance'
+    X_HAT = 'normalized input in a batch norm layer'
+    IVAR = 'inverted variance'
 
     # Data names.
     INPUT = 'layer input'
@@ -44,8 +48,12 @@ class Name(Enum):
     MASK = 'matrix of boolean values'
 
     # Gradients of a linear layer.
-    D_WEIGHTS = 'weights gradient'
-    D_BIASES = 'biases gradient'
+    D_WEIGHTS = 'linear weights gradient'
+    D_BIASES = 'linear biases gradient'
+
+    # Gradients for a convolutional layer.
+    D_KERNEL_WEIGHTS = 'kernel weights gradient'
+    D_KERNEL_BIASES = 'kernel biases gradient'
 
     # Gradients of a Batch Norm Layer.
     D_GAMMA = 'gamma gradient'
@@ -54,6 +62,12 @@ class Name(Enum):
     # Velocity.
     V_WEIGHTS = 'weights velocity'
     V_WEIGHTS_PREV = 'previous weights velocity'
+
+    V_KERNEL_WEIGHTS = 'kernel weights velocity'
+    V_KERNEL_WEIGHTS_PREV = 'previous kernel weights velocity'
+
+    V_KERNEL_BIASES = 'kernel biases velocity'
+    V_KERNEL_BIASES_PREV = 'previous kernel biases velocity'
 
     V_BIASES = 'biases velocity'
     V_BIASES_PREV = 'previous biases velocity'

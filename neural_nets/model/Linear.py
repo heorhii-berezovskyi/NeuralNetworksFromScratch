@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import ndarray
 
-from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
 from neural_nets.model.Cache import Cache
 
@@ -26,7 +26,7 @@ class LinearTest(TestModeLayer):
         return self.weights
 
 
-class LinearTrain(TrainModeLayer):
+class LinearTrain(TrainModeLayerWithWeights):
     def __init__(self, input_dim: int, num_of_neurons: int):
         super().__init__()
         self.num_of_neurons = num_of_neurons

@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
 
 
@@ -33,7 +33,7 @@ class BatchNorm1DTest(TestModeLayer):
         return output_data
 
 
-class BatchNorm1DTrain(TrainModeLayer):
+class BatchNorm1DTrain(TrainModeLayerWithWeights):
     def __init__(self, input_dim: int, momentum: float):
         super().__init__()
         self.input_dim = input_dim
@@ -51,50 +51,45 @@ class BatchNorm1DTrain(TrainModeLayer):
 
     def forward(self, input_data: ndarray, test_model_params: dict):
         gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
-        eps = 1e-5
-        mu = input_data.mean(axis=0)  # Size (H,)
-        var = np.var(input_data, axis=0)  # Size (H,)
-        xn = (input_data - mu) * (var + eps) ** (-1. / 2.)
-        output_data = gamma * xn + beta
+
+        mu = np.mean(input_data, axis=0)
+        xmu = input_data - mu
+        var = np.var(input_data, axis=0)
+        sqrtvar = np.sqrt(var + 1e-5)
+        ivar = 1. / sqrtvar
+        xhat = xmu * ivar
+        output_data = gamma * xhat + beta
 
         running_mean = test_model_params[self.id].get(name=Name.RUNNING_MEAN)
         running_variance = test_model_params[self.id].get(name=Name.RUNNING_VARIANCE)
 
         # Update running average of mean
         running_mean *= self.momentum
-        running_mean += (1.0 - self.momentum) * mu
+        running_mean += (1. - self.momentum) * mu
 
         # Update running average of variance
         running_variance *= self.momentum
-        running_variance += (1.0 - self.momentum) * var
+        running_variance += (1. - self.momentum) * var
 
         test_model_params[self.id].update(name=Name.RUNNING_MEAN, value=running_mean)
         test_model_params[self.id].update(name=Name.RUNNING_VARIANCE, value=running_variance)
 
         layer_forward_run = Cache()
-        layer_forward_run.add(name=Name.INPUT, value=input_data)
-        layer_forward_run.add(name=Name.MU, value=mu)
-        layer_forward_run.add(name=Name.VAR, value=var)
+        layer_forward_run.add(name=Name.X_HAT, value=xhat)
+        layer_forward_run.add(name=Name.IVAR, value=ivar)
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
     def backward(self, dout: ndarray, layer_forward_run: Cache):
-        input_data = layer_forward_run.get(name=Name.INPUT)
-        mu = layer_forward_run.get(name=Name.MU)
-        var = layer_forward_run.get(name=Name.VAR)
         gamma = self.weights.get(name=Name.GAMMA)
-        N = input_data.shape[0]
+        N, D = dout.shape
 
-        # Centered data.
-        xc = input_data - mu
+        xhat, ivar = layer_forward_run.get(name=Name.X_HAT), layer_forward_run.get(name=Name.IVAR)
 
-        # Stable variance.
-        s_var = var + 1e-5
-
+        dxhat = dout * gamma
+        dinput = 1. / N * ivar * (N * dxhat - np.sum(dxhat, axis=0) - xhat * np.sum(dxhat * xhat, axis=0))
         dbeta = np.sum(dout, axis=0)
-        dgamma = np.sum(xc * s_var ** (-1. / 2.) * dout, axis=0)
-        dinput = (1. / N) * gamma * s_var ** (-1. / 2.) * (
-                N * dout - np.sum(dout, axis=0) - xc * s_var ** (-1.) * np.sum(dout * xc, axis=0))
+        dgamma = np.sum(xhat * dout, axis=0)
 
         layer_backward_run = Cache()
         layer_backward_run.add(name=Name.D_GAMMA, value=dgamma)
