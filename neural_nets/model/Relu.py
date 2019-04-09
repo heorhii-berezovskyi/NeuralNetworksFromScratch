@@ -48,4 +48,5 @@ class ReluTrain(TrainModeLayer):
         return ReluTest()
 
     def accept(self, visitor):
-        visitor.visit_relu(self)
+        # visitor.visit_relu(self)
+        visitor.visit_weightless_layer(self)

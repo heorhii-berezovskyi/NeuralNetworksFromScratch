@@ -11,9 +11,9 @@ class Conv2DTest(TestModeLayer):
     def __init__(self, weights: Cache, stride: int, padding: int):
         super().__init__()
         self.weights = weights
-        self.num_filters = weights.get(name=Name.KERNEL_WEIGHTS).shape[0]
-        self.filter_height = weights.get(name=Name.KERNEL_WEIGHTS).shape[2]
-        self.filter_width = weights.get(name=Name.KERNEL_WEIGHTS).shape[3]
+        self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
+        self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
+        self.filter_width = weights.get(name=Name.WEIGHTS).shape[3]
         self.stride = stride
         self.padding = padding
 
@@ -44,7 +44,7 @@ class Conv2DTest(TestModeLayer):
                                 padding=self.padding,
                                 stride=self.stride)
 
-        weights, biases = self.weights.get(name=Name.KERNEL_WEIGHTS), self.weights.get(name=Name.KERNEL_BIASES)
+        weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
         res = weights.reshape((self.num_filters, -1)) @ x_cols + biases.reshape(-1, 1)
 
         output_data = res.reshape(self.num_filters, out_h, out_w, N)
@@ -103,7 +103,7 @@ class Conv2DTrain(TrainModeLayerWithWeights):
                                 padding=self.padding,
                                 stride=self.stride)
 
-        weights, biases = self.weights.get(name=Name.KERNEL_WEIGHTS), self.weights.get(name=Name.KERNEL_BIASES)
+        weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
         res = weights.reshape((self.num_filters, -1)) @ x_cols + biases.reshape(-1, 1)
 
         output_data = res.reshape(self.num_filters, out_height, out_width, N)
@@ -118,7 +118,7 @@ class Conv2DTrain(TrainModeLayerWithWeights):
           A fast implementation of the backward pass for a convolutional layer
           based on im2col and col2im.
         """
-        weights = self.weights.get(name=Name.KERNEL_WEIGHTS)
+        weights = self.weights.get(name=Name.WEIGHTS)
         input_data, x_cols = layer_forward_run.get(name=Name.INPUT), layer_forward_run.get(name=Name.X_COLS)
 
         dbiases = np.sum(dout, axis=(0, 2, 3))
@@ -136,8 +136,8 @@ class Conv2DTrain(TrainModeLayerWithWeights):
                                 stride=self.stride)
 
         layer_backward_run = Cache()
-        layer_backward_run.add(name=Name.D_KERNEL_BIASES, value=dbiases)
-        layer_backward_run.add(name=Name.D_KERNEL_WEIGHTS, value=dweights)
+        layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
+        layer_backward_run.add(name=Name.D_WEIGHTS, value=dweights)
         return dinput, layer_backward_run
 
     def to_test(self, test_model_params: dict):
@@ -147,14 +147,14 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         return layer
 
     def accept(self, visitor):
-        visitor.visit_conv2d(self)
+        visitor.visit_linear(self)
 
     @staticmethod
     def create_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int):
         weights = Cache()
-        weights.add(name=Name.KERNEL_WEIGHTS,
+        weights.add(name=Name.WEIGHTS,
                     value=np.random.rand(num_filters, filter_depth, filter_height, filter_width) * np.sqrt(
                         2. / (filter_depth * filter_height * filter_width)))
 
-        weights.add(name=Name.KERNEL_BIASES, value=np.zeros(num_filters))
+        weights.add(name=Name.BIASES, value=np.zeros(num_filters))
         return weights

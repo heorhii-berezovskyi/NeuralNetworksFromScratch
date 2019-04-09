@@ -103,7 +103,7 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         return layer
 
     def accept(self, visitor):
-        visitor.visit_batch_norm_1d(self)
+        visitor.visit_batch_norm(self)
 
     @staticmethod
     def create_weights(input_dim: int):

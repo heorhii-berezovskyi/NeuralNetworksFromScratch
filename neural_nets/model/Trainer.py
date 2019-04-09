@@ -12,7 +12,7 @@ from neural_nets.model.Linear import LinearTrain
 from neural_nets.model.MaxPool import MaxPoolTrain
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Relu import ReluTrain
-from neural_nets.optimizer.SGDNesterovMomentum import SGDNesterovMomentum
+from neural_nets.optimizer.Adagrad import Adagrad
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
 from neural_nets.utils.PlotUtils import plot
 
@@ -75,7 +75,8 @@ def run():
 
     # optimizer = SGD(model=train_model, learning_rate=0.001)
     # optimizer = SGDMomentum(model=train_model, learning_rate=0.0001, mu=0.9)
-    optimizer = SGDNesterovMomentum(model=train_model, learning_rate=0.02, mu=0.9)
+    # optimizer = SGDNesterovMomentum(model=train_model, learning_rate=0.02, mu=0.9)
+    optimizer = Adagrad(model=train_model, learning_rate=0.02)
 
     loader = DatasetLoader(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
 

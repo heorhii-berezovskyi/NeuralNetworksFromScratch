@@ -1,14 +1,6 @@
-from neural_nets.model.BatchNorm1D import BatchNorm1DTrain
-from neural_nets.model.BatchNorm2D import BatchNorm2DTrain
-from neural_nets.model.Conv2D import Conv2DTrain
-from neural_nets.model.Dropout1D import Dropout1DTrain
-from neural_nets.model.Dropout2D import Dropout2DTrain
-from neural_nets.model.Layer import TrainModeLayerWithWeights
-from neural_nets.model.Linear import LinearTrain
-from neural_nets.model.MaxPool import MaxPoolTrain
+from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Relu import ReluTrain
 from neural_nets.model.Visitor import Visitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
@@ -22,34 +14,15 @@ class SGDWeightsUpdateVisitor(Visitor):
         self.lr = learning_rate
         self.model_backward_run = model_backward_run
 
-    def visit_linear(self, layer: LinearTrain):
+    def visit_linear(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.WEIGHTS, Name.BIASES]
         grad_names = [Name.D_WEIGHTS, Name.D_BIASES]
         self._update(weight_names=weight_names, grad_names=grad_names, layer=layer)
 
-    def visit_conv2d(self, layer: Conv2DTrain):
-        weight_names = [Name.KERNEL_WEIGHTS, Name.KERNEL_BIASES]
-        grad_names = [Name.D_KERNEL_WEIGHTS, Name.D_KERNEL_BIASES]
-        self._update(weight_names=weight_names, grad_names=grad_names, layer=layer)
-
-    def visit_relu(self, layer: ReluTrain):
+    def visit_weightless_layer(self, layer: TrainModeLayer):
         self.model_backward_run.pop()
 
-    def visit_max_pool(self, layer: MaxPoolTrain):
-        self.model_backward_run.pop()
-
-    def visit_dropout1d(self, layer: Dropout1DTrain):
-        self.model_backward_run.pop()
-
-    def visit_dropout2d(self, layer: Dropout2DTrain):
-        self.model_backward_run.pop()
-
-    def visit_batch_norm_1d(self, layer: BatchNorm1DTrain):
-        weight_names = [Name.GAMMA, Name.BETA]
-        grad_names = [Name.D_GAMMA, Name.D_BETA]
-        self._update(weight_names=weight_names, grad_names=grad_names, layer=layer)
-
-    def visit_batch_norm_2d(self, layer: BatchNorm2DTrain):
+    def visit_batch_norm(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.GAMMA, Name.BETA]
         grad_names = [Name.D_GAMMA, Name.D_BETA]
         self._update(weight_names=weight_names, grad_names=grad_names, layer=layer)

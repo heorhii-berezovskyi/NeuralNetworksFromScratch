@@ -96,4 +96,5 @@ class MaxPoolTrain(TrainModeLayer):
         return layer
 
     def accept(self, visitor):
-        visitor.visit_max_pool(self)
+        # visitor.visit_max_pool(self)
+        visitor.visit_weightless_layer(self)

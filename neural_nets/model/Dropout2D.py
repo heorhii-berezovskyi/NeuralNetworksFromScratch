@@ -54,4 +54,5 @@ class Dropout2DTrain(TrainModeLayer):
         return layer
 
     def accept(self, visitor):
-        visitor.visit_dropout2d(self)
+        # visitor.visit_dropout2d(self)
+        visitor.visit_weightless_layer(self)

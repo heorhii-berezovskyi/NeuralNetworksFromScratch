@@ -21,13 +21,10 @@ class Name(Enum):
     CONV2D_TEST = 'Convolutional in test mode'
     MAX_POOL_TEST = 'Max pool in test mode'
 
-    # Weights names.
-    KERNEL_WEIGHTS = 'weights in a convolutional layer'
-    KERNEL_BIASES = 'biases in a convolutional layer'
     WEIGHTS = 'weights in a linear layer'
     BIASES = 'biases in a linear layer'
-    GAMMA = 'gamma'
-    BETA = 'beta'
+    GAMMA = 'gamma in batch norm'
+    BETA = 'beta in batch norm'
 
     # Parameter names.
     RUNNING_MEAN = 'running mean'
@@ -51,10 +48,6 @@ class Name(Enum):
     D_WEIGHTS = 'linear weights gradient'
     D_BIASES = 'linear biases gradient'
 
-    # Gradients for a convolutional layer.
-    D_KERNEL_WEIGHTS = 'kernel weights gradient'
-    D_KERNEL_BIASES = 'kernel biases gradient'
-
     # Gradients of a Batch Norm Layer.
     D_GAMMA = 'gamma gradient'
     D_BETA = 'beta gradient'
@@ -77,3 +70,10 @@ class Name(Enum):
 
     V_BETA = 'beta velocity'
     V_BETA_PREV = 'previous beta velocity'
+
+    # Cache names for adaptive learning rate methods.
+    D_WEIGHTS_CACHE = 'cache for weights gradients'
+    D_BIASES_CACHE = 'cache for biases gradients'
+
+    D_GAMMA_CACHE = 'cache for gamma gradients'
+    D_BETA_CACHE = 'cache for beta gradients'
