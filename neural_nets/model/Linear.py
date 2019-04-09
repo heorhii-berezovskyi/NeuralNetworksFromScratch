@@ -11,18 +11,18 @@ class LinearTest(TestModeLayer):
         super().__init__()
         self.weights = weights
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.LINEAR_TEST
 
-    def forward(self, input_data: ndarray):
+    def forward(self, input_data: ndarray) -> ndarray:
         weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
         output_data = input_data.reshape(input_data.shape[0], -1) @ weights + biases
         return output_data
 
-    def get_weights(self):
+    def get_weights(self) -> Cache:
         return self.weights
 
 
@@ -33,16 +33,16 @@ class LinearTrain(TrainModeLayerWithWeights):
         self.input_dim = input_dim
         self.weights = self.create_weights(input_dim=input_dim, num_of_neurons=num_of_neurons)
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.LINEAR_TRAIN
 
-    def get_weights(self):
+    def get_weights(self) -> Cache:
         return self.weights
 
-    def forward(self, input_data: ndarray, test_model_params: dict):
+    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
         weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
         output_data = input_data.reshape(input_data.shape[0], -1) @ weights + biases
 
@@ -51,7 +51,7 @@ class LinearTrain(TrainModeLayerWithWeights):
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache):
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
         input_data = layer_forward_run.get(name=Name.INPUT)
         weights = self.weights.get(name=Name.WEIGHTS)
 
@@ -64,7 +64,7 @@ class LinearTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict):
+    def to_test(self, test_model_params: dict) -> TestModeLayer:
         weights = self.weights
         layer = LinearTest(weights=weights)
         return layer
@@ -73,8 +73,8 @@ class LinearTrain(TrainModeLayerWithWeights):
         visitor.visit_linear(self)
 
     @staticmethod
-    def create_weights(input_dim: int, num_of_neurons: int):
+    def create_weights(input_dim: int, num_of_neurons: int) -> Cache:
         weights = Cache()
         weights.add(name=Name.WEIGHTS, value=np.random.rand(input_dim, num_of_neurons) * np.sqrt(2. / input_dim))
-        weights.add(name=Name.BIASES, value=np.zeros(num_of_neurons))
+        weights.add(name=Name.BIASES, value=np.zeros(num_of_neurons, dtype=np.float64))
         return weights

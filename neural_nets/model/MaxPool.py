@@ -14,13 +14,13 @@ class MaxPoolTest(TestModeLayer):
         self.pool_width = pool_width
         self.stride = stride
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.MAX_POOL_TEST
 
-    def forward(self, input_data: ndarray):
+    def forward(self, input_data: ndarray) -> ndarray:
         N, C, H, W = input_data.shape
 
         assert (H - self.pool_height) % self.stride == 0, 'Invalid height'
@@ -44,13 +44,13 @@ class MaxPoolTrain(TrainModeLayer):
         self.pool_width = pool_width
         self.stride = stride
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.MAX_POOL_TRAIN
 
-    def forward(self, input_data: ndarray, test_model_params: dict):
+    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
         N, C, H, W = input_data.shape
 
         assert (H - self.pool_height) % self.stride == 0, 'Invalid height'
@@ -72,7 +72,7 @@ class MaxPoolTrain(TrainModeLayer):
         layer_forward_run.add(name=Name.X_COLS_ARGMAX, value=x_cols_argmax)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache):
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
         input_data = layer_forward_run.get(name=Name.INPUT)
         x_cols = layer_forward_run.get(name=Name.X_COLS)
         x_cols_argmax = layer_forward_run.get(name=Name.X_COLS_ARGMAX)
@@ -89,12 +89,11 @@ class MaxPoolTrain(TrainModeLayer):
         layer_backward_run = Cache()
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict):
+    def to_test(self, test_model_params: dict) -> TestModeLayer:
         layer = MaxPoolTest(pool_height=self.pool_height,
                             pool_width=self.pool_width,
                             stride=self.stride)
         return layer
 
     def accept(self, visitor):
-        # visitor.visit_max_pool(self)
         visitor.visit_weightless_layer(self)

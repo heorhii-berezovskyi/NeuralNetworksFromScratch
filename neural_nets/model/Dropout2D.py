@@ -10,13 +10,13 @@ class Dropout2DTest(TestModeLayer):
     def __init__(self):
         super().__init__()
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.DROPOUT2D_TEST
 
-    def forward(self, input_data: ndarray):
+    def forward(self, input_data: ndarray) -> ndarray:
         output_data = input_data
         return output_data
 
@@ -26,13 +26,13 @@ class Dropout2DTrain(TrainModeLayer):
         super().__init__()
         self.p = keep_active_prob
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.DROPOUT2D_TRAIN
 
-    def forward(self, input_data: ndarray, test_model_params: dict):
+    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
         N, C = input_data.shape[0], input_data.shape[1]
         mask = (np.random.rand(N, C, 1, 1) < self.p) / self.p
         output_data = input_data * mask
@@ -42,17 +42,16 @@ class Dropout2DTrain(TrainModeLayer):
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache):
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
         mask = layer_forward_run.get(name=Name.MASK)
         dinput = dout * mask
 
         layer_backward_run = Cache()
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict):
+    def to_test(self, test_model_params: dict) -> TestModeLayer:
         layer = Dropout2DTest()
         return layer
 
     def accept(self, visitor):
-        # visitor.visit_dropout2d(self)
         visitor.visit_weightless_layer(self)

@@ -3,6 +3,7 @@ from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import Visitor
 from neural_nets.optimizer.Optimizer import Optimizer
+import numpy as np
 
 
 class SGDWeightsUpdateVisitor(Visitor):
@@ -10,7 +11,7 @@ class SGDWeightsUpdateVisitor(Visitor):
     Updates weights on each type of train mode model layers through a stochastic gradient update procedure.
     """
 
-    def __init__(self, learning_rate: float, model_backward_run: list):
+    def __init__(self, learning_rate: np.float64, model_backward_run: list):
         self.lr = learning_rate
         self.model_backward_run = model_backward_run
 
@@ -38,7 +39,7 @@ class SGDWeightsUpdateVisitor(Visitor):
 
 
 class SGD(Optimizer):
-    def __init__(self, model: TrainModel, learning_rate: float):
+    def __init__(self, model: TrainModel, learning_rate: np.float64):
         super().__init__(model=model)
         self.lr = learning_rate
 

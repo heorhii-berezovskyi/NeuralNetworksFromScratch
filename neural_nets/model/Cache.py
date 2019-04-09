@@ -15,7 +15,7 @@ class Cache:
             raise ParamAlreadyExistsException(
                 'Param ' + name.value + ' already exists in params.')
 
-    def get(self, name: Name):
+    def get(self, name: Name) -> ndarray:
         if name in self.params:
             return self.params[name]
         else:

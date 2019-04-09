@@ -12,19 +12,19 @@ class BatchNorm2DTest(TestModeLayer):
         self.weights = weights
         self.params = params
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.BATCH_NORM_2D_TEST
 
-    def get_weights(self):
+    def get_weights(self) -> Cache:
         return self.weights
 
-    def get_params(self):
+    def get_params(self) -> Cache:
         return self.params
 
-    def forward(self, input_data: ndarray):
+    def forward(self, input_data: ndarray) -> ndarray:
         gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
         running_mean, running_variance = self.params.get(Name.RUNNING_MEAN), self.params.get(name=Name.RUNNING_VARIANCE)
 
@@ -45,19 +45,19 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         self.momentum = momentum
         self.weights = self.create_weights(num_of_channels=num_of_channels)
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.BATCH_NORM_2D_TRAIN
 
-    def get_num_of_channels(self):
+    def get_num_of_channels(self) -> int:
         return self.num_of_channels
 
-    def get_weights(self):
+    def get_weights(self) -> Cache:
         return self.weights
 
-    def forward(self, input_data: ndarray, test_model_params: dict):
+    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
         gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
         N, C, H, W = input_data.shape
 
@@ -93,7 +93,7 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache):
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
         N, C, H, W = dout.shape
         dout_flat = dout.transpose((0, 2, 3, 1)).reshape(-1, C)
 
@@ -113,7 +113,7 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_BETA, value=dbeta)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict):
+    def to_test(self, test_model_params: dict) -> TestModeLayer:
         weights = self.weights
         params = test_model_params.get(self.id)
         layer = BatchNorm2DTest(weights=weights, params=params)
@@ -123,8 +123,8 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         visitor.visit_batch_norm(self)
 
     @staticmethod
-    def create_weights(num_of_channels: int):
+    def create_weights(num_of_channels: int) -> Cache:
         weights = Cache()
-        weights.add(name=Name.GAMMA, value=np.ones(num_of_channels))
-        weights.add(name=Name.BETA, value=np.zeros(num_of_channels))
+        weights.add(name=Name.GAMMA, value=np.ones(num_of_channels, dtype=np.float64))
+        weights.add(name=Name.BETA, value=np.zeros(num_of_channels, dtype=np.float64))
         return weights

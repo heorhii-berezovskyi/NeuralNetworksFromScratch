@@ -46,5 +46,5 @@ class ModelTest(unittest.TestCase):
         images = randn(64, 784)
         labels = randint(0, 10, size=batch_size)
         model.forward(labels=labels, images=images)
-        model.backward()
+        model.backward_on_model()
         self.assertTrue(len(model.gradients) == 2, "Backpropogation doesn't work.")

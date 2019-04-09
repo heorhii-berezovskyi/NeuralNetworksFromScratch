@@ -45,7 +45,7 @@ class TrainModel:
     def __init__(self):
         self.layers = []
 
-    def get_layers(self):
+    def get_layers(self) -> list:
         return self.layers
 
     def add(self, layer: TrainModeLayer):
@@ -55,7 +55,7 @@ class TrainModel:
         """
         self.layers.append(layer)
 
-    def init_test_model_params(self):
+    def init_test_model_params(self) -> dict:
         """
         Initializes params required for building a test model.
         :return: test model parameters dict.
@@ -65,7 +65,7 @@ class TrainModel:
             layer.accept(visitor)
         return visitor.get_result()
 
-    def forward(self, test_model_params: dict, images: ndarray):
+    def forward(self, test_model_params: dict, images: ndarray) -> list:
         """
         Runs layer by layer in a forward mode, passing an input data and updating test model parameters.
         :param test_model_params: is a dict of parameters required for a test model.
@@ -80,7 +80,7 @@ class TrainModel:
             input_data = layer_forward_run.get(Name.OUTPUT)
         return model_forward_run
 
-    def to_test(self, test_model_params: dict):
+    def to_test(self, test_model_params: dict) -> TestModel:
         """
         Builds a test model based on a train model and test model parameters.
         :param test_model_params: is a dict of parameters required to build a test model and updated through a multiple

@@ -24,10 +24,10 @@ class TestModelInitVisitor(Visitor):
         params = Cache()
         weights = layer.get_weights()
 
-        params.add(name=Name.RUNNING_MEAN, value=np.zeros_like(weights.get(Name.GAMMA)))
-        params.add(name=Name.RUNNING_VARIANCE, value=np.zeros_like(weights.get(Name.GAMMA)))
+        params.add(name=Name.RUNNING_MEAN, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
+        params.add(name=Name.RUNNING_VARIANCE, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
 
         self.result[layer.get_id()] = params
 
-    def get_result(self):
+    def get_result(self) -> dict:
         return self.result

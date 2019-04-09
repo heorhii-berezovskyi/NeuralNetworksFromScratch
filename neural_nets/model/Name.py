@@ -56,12 +56,6 @@ class Name(Enum):
     V_WEIGHTS = 'weights velocity'
     V_WEIGHTS_PREV = 'previous weights velocity'
 
-    V_KERNEL_WEIGHTS = 'kernel weights velocity'
-    V_KERNEL_WEIGHTS_PREV = 'previous kernel weights velocity'
-
-    V_KERNEL_BIASES = 'kernel biases velocity'
-    V_KERNEL_BIASES_PREV = 'previous kernel biases velocity'
-
     V_BIASES = 'biases velocity'
     V_BIASES_PREV = 'previous biases velocity'
 
@@ -77,3 +71,15 @@ class Name(Enum):
 
     D_GAMMA_CACHE = 'cache for gamma gradients'
     D_BETA_CACHE = 'cache for beta gradients'
+
+    ADAM_M_WEIGHTS = 'm cache for weights'
+    ADAM_V_WEIGHTS = 'v cache for weights'
+
+    ADAM_M_BIASES = 'm cache for biases'
+    ADAM_V_BIASES = 'v cache for biases'
+
+    ADAM_M_GAMMA = 'm cache for gamma'
+    ADAM_V_GAMMA = 'v cache for gamma'
+
+    ADAM_M_BETA = 'm cache for beta'
+    ADAM_V_BETA = 'v cache for beta'

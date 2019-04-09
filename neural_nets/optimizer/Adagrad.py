@@ -10,16 +10,18 @@ from neural_nets.optimizer.Optimizer import Optimizer
 
 class AdagradCacheInitVisitor(Visitor):
     def __init__(self):
-        self.cache = {}
+        self.cache_dict = {}
 
     def visit_linear(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
         weights = layer.get_weights()
 
-        layer_gradients_cache.add(name=Name.D_WEIGHTS_CACHE, value=np.zeros_like(weights.get(name=Name.WEIGHTS)))
-        layer_gradients_cache.add(name=Name.D_BIASES_CACHE, value=np.zeros_like(weights.get(name=Name.BIASES)))
+        layer_gradients_cache.add(name=Name.D_WEIGHTS_CACHE,
+                                  value=np.zeros_like(weights.get(name=Name.WEIGHTS), dtype=np.float64))
+        layer_gradients_cache.add(name=Name.D_BIASES_CACHE,
+                                  value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
 
-        self.cache[layer.get_id()] = layer_gradients_cache
+        self.cache_dict[layer.get_id()] = layer_gradients_cache
 
     def visit_weightless_layer(self, layer: TrainModeLayer):
         pass
@@ -28,13 +30,15 @@ class AdagradCacheInitVisitor(Visitor):
         layer_gradients_cache = Cache()
         weights = layer.get_weights()
 
-        layer_gradients_cache.add(name=Name.D_GAMMA_CACHE, value=np.zeros_like(weights.get(name=Name.GAMMA)))
-        layer_gradients_cache.add(name=Name.D_BETA_CACHE, value=np.zeros_like(weights.get(name=Name.BETA)))
+        layer_gradients_cache.add(name=Name.D_GAMMA_CACHE,
+                                  value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
+        layer_gradients_cache.add(name=Name.D_BETA_CACHE,
+                                  value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
 
-        self.cache[layer.get_id()] = layer_gradients_cache
+        self.cache_dict[layer.get_id()] = layer_gradients_cache
 
-    def get_grads_cache(self):
-        return self.cache
+    def get_grads_cache(self) -> dict:
+        return self.cache_dict
 
 
 class AdagradWeightsUpdateVisitor(Visitor):
@@ -79,7 +83,7 @@ class Adagrad(Optimizer):
         self.lr = learning_rate
         self.grads_cache = self.init_cache()
 
-    def init_cache(self):
+    def init_cache(self) -> dict:
         visitor = AdagradCacheInitVisitor()
         for layer in self.model.get_layers():
             layer.accept(visitor)

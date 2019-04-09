@@ -12,19 +12,19 @@ class BatchNorm1DTest(TestModeLayer):
         self.weights = weights
         self.params = params
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.BATCH_NORM_1D_TEST
 
-    def get_weights(self):
+    def get_weights(self) -> Cache:
         return self.weights
 
-    def get_params(self):
+    def get_params(self) -> Cache:
         return self.params
 
-    def forward(self, input_data: ndarray):
+    def forward(self, input_data: ndarray) -> ndarray:
         running_mean, running_variance = self.params.get(Name.RUNNING_MEAN), self.params.get(name=Name.RUNNING_VARIANCE)
         gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
 
@@ -40,16 +40,16 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         self.momentum = momentum
         self.weights = self.create_weights(input_dim=input_dim)
 
-    def get_id(self):
+    def get_id(self) -> int:
         return self.id
 
-    def get_name(self):
+    def get_name(self) -> Name:
         return Name.BATCH_NORM_1D_TRAIN
 
     def get_weights(self):
         return self.weights
 
-    def forward(self, input_data: ndarray, test_model_params: dict):
+    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
         gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
 
         mu = np.mean(input_data, axis=0)
@@ -80,7 +80,7 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         layer_forward_run.add(name=Name.OUTPUT, value=output_data)
         return layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache):
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
         gamma = self.weights.get(name=Name.GAMMA)
         N, D = dout.shape
 
@@ -96,7 +96,7 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_BETA, value=dbeta)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict):
+    def to_test(self, test_model_params: dict) -> TestModeLayer:
         weights = self.weights
         params = test_model_params.get(self.id)
         layer = BatchNorm1DTest(weights=weights, params=params)
@@ -106,8 +106,8 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         visitor.visit_batch_norm(self)
 
     @staticmethod
-    def create_weights(input_dim: int):
+    def create_weights(input_dim: int) -> Cache:
         weights = Cache()
-        weights.add(name=Name.GAMMA, value=np.ones(input_dim))
-        weights.add(name=Name.BETA, value=np.zeros(input_dim))
+        weights.add(name=Name.GAMMA, value=np.ones(input_dim, dtype=np.float64))
+        weights.add(name=Name.BETA, value=np.zeros(input_dim, dtype=np.float64))
         return weights

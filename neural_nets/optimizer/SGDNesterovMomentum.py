@@ -16,11 +16,13 @@ class SGDNesterovMomentumParamsInitVisitor(Visitor):
         layer_velocity = Cache()
         weights = layer.get_weights()
 
-        layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(weights.get(name=Name.WEIGHTS)))
-        layer_velocity.add(name=Name.V_WEIGHTS_PREV, value=np.zeros_like(weights.get(name=Name.WEIGHTS)))
+        layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(weights.get(name=Name.WEIGHTS), dtype=np.float64))
+        layer_velocity.add(name=Name.V_WEIGHTS_PREV,
+                           value=np.zeros_like(weights.get(name=Name.WEIGHTS), dtype=np.float64))
 
-        layer_velocity.add(name=Name.V_BIASES, value=np.zeros_like(weights.get(name=Name.BIASES)))
-        layer_velocity.add(name=Name.V_BIASES_PREV, value=np.zeros_like(weights.get(name=Name.BIASES)))
+        layer_velocity.add(name=Name.V_BIASES, value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
+        layer_velocity.add(name=Name.V_BIASES_PREV,
+                           value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
 
         self.params[layer.get_id()] = layer_velocity
 
@@ -31,20 +33,20 @@ class SGDNesterovMomentumParamsInitVisitor(Visitor):
         layer_velocity = Cache()
         weights = layer.get_weights()
 
-        layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(weights.get(name=Name.GAMMA)))
-        layer_velocity.add(name=Name.V_GAMMA_PREV, value=np.zeros_like(weights.get(name=Name.GAMMA)))
+        layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
+        layer_velocity.add(name=Name.V_GAMMA_PREV, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
 
-        layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(weights.get(name=Name.BETA)))
-        layer_velocity.add(name=Name.V_BETA_PREV, value=np.zeros_like(weights.get(name=Name.BETA)))
+        layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
+        layer_velocity.add(name=Name.V_BETA_PREV, value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
 
         self.params[layer.get_id()] = layer_velocity
 
-    def get_velocity_params(self):
+    def get_velocity_params(self) -> dict:
         return self.params
 
 
 class SGDNesterovMomentumWeightsUpdateVisitor(Visitor):
-    def __init__(self, learning_rate: float, mu: float, model_backward_run: list, velocity_params: dict):
+    def __init__(self, learning_rate: np.float64, mu: np.float64, model_backward_run: list, velocity_params: dict):
         self.lr = learning_rate
         self.mu = mu
         self.model_backward_run = model_backward_run
@@ -86,13 +88,13 @@ class SGDNesterovMomentumWeightsUpdateVisitor(Visitor):
 
 
 class SGDNesterovMomentum(Optimizer):
-    def __init__(self, model: TrainModel, learning_rate: float, mu: float):
+    def __init__(self, model: TrainModel, learning_rate: np.float64, mu: np.float64):
         super().__init__(model=model)
         self.lr = learning_rate
         self.mu = mu
         self.velocity_params = self.init_params()
 
-    def init_params(self):
+    def init_params(self) -> dict:
         visitor = SGDNesterovMomentumParamsInitVisitor()
         for layer in self.model.get_layers():
             layer.accept(visitor)

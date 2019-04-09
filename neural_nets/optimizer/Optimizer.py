@@ -16,7 +16,7 @@ class Optimizer:
     def __init__(self, model: TrainModel):
         self.model = model
 
-    def backward(self, loss_function: Loss, model_forward_run: list, loss_run: Cache):
+    def backward_on_model(self, loss_function: Loss, model_forward_run: list, loss_run: Cache) -> list:
         """
         Performs backward pass of a train model based on the loss function, model forward run and loss function run.
         :param loss_function: is a loss function.

@@ -10,7 +10,7 @@ class CrossEntropyLoss(Loss):
     def __init__(self):
         super().__init__()
 
-    def eval_data_loss(self, labels: ndarray, model_forward_run: list):
+    def eval_data_loss(self, labels: ndarray, model_forward_run: list) -> tuple:
         scores = model_forward_run[-1].get(Name.OUTPUT)
         shifted_logits = scores - np.max(scores, axis=1, keepdims=True)
         Z = np.sum(np.exp(shifted_logits), axis=1, keepdims=True)
@@ -24,7 +24,7 @@ class CrossEntropyLoss(Loss):
         loss_run.add(name=Name.PROBS, value=probs)
         return data_loss, loss_run
 
-    def eval_gradient(self, loss_run: Cache):
+    def eval_gradient(self, loss_run: Cache) -> ndarray:
         labels = loss_run.get(name=Name.LABELS)
         probs = loss_run.get(name=Name.PROBS)
         N = labels.size

@@ -12,7 +12,7 @@ from neural_nets.model.Linear import LinearTrain
 from neural_nets.model.MaxPool import MaxPoolTrain
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Relu import ReluTrain
-from neural_nets.optimizer.Adagrad import Adagrad
+from neural_nets.optimizer.Adam import Adam
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
 from neural_nets.utils.PlotUtils import plot
 
@@ -76,11 +76,13 @@ def run():
     # optimizer = SGD(model=train_model, learning_rate=0.001)
     # optimizer = SGDMomentum(model=train_model, learning_rate=0.0001, mu=0.9)
     # optimizer = SGDNesterovMomentum(model=train_model, learning_rate=0.02, mu=0.9)
-    optimizer = Adagrad(model=train_model, learning_rate=0.02)
+    # optimizer = Adagrad(model=train_model, learning_rate=0.02)
+    # optimizer = RMSprop(model=train_model, learning_rate=0.02, decay_rate=0.9)
+    optimizer = Adam(model=train_model, learning_rate=0.001, beta1=0.9, beta2=0.999)
 
     loader = DatasetLoader(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
 
-    train_dataset, test_dataset = loader.load('mnist_train.csv', 'mnist_test.csv')
+    train_dataset, test_dataset = loader.load('fmnist_train.npy', 'fmnist_test.npy')
     train_dataset = preprocess_dataset(train_dataset)
     test_dataset = preprocess_dataset(test_dataset)
 
@@ -92,7 +94,7 @@ def run():
 
     batch_size = 64
     test_batch_size = 256
-    for i in range(1000):
+    for i in range(5000):
         batch = sample(dataset=train_dataset, batch_size=batch_size)
         label_batch, image_batch = split_into_labels_and_data(batch)
         image_batch = image_batch.reshape((batch_size, 1, 28, 28))
@@ -102,12 +104,12 @@ def run():
 
         losses.append(data_loss)
 
-        model_backward_run = optimizer.backward(loss_function=loss_function,
-                                                model_forward_run=model_forward_run, loss_run=loss_run)
+        model_backward_run = optimizer.backward_on_model(loss_function=loss_function,
+                                                         model_forward_run=model_forward_run, loss_run=loss_run)
 
         optimizer.step(model_backward_run=model_backward_run)
 
-        if i % 100 == 0:
+        if i % 500 == 0:
             test_model = train_model.to_test(test_model_params)
 
             batch_test_accuracies = []
@@ -123,7 +125,7 @@ def run():
             batch_train_accuracies = []
             for k in range(250):
                 train_batch = sample(dataset=train_dataset, batch_size=test_batch_size)
-                train_labels, train_data = split_into_labels_and_data(train_batch)
+                train_labels, train_data = split_into_labels_and_data(data=train_batch)
                 train_data = train_data.reshape((test_batch_size, 1, 28, 28))
                 batch_train_accuracies.append(test_model.test(labels=train_labels, images=train_data))
             train_accuracy = np.mean(batch_train_accuracies)
@@ -138,3 +140,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+

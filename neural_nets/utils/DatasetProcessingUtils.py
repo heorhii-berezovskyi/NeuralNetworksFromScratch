@@ -1,29 +1,23 @@
 import numpy as np
 from numpy import ndarray
-from builtins import range
 
 
-def split_into_labels_and_data(dataset: ndarray):
-    labels = dataset[:, 0]
-    data = np.delete(dataset, 0, axis=1)
-    return labels.astype(int), data
+def split_into_labels_and_data(data: ndarray) -> tuple:
+    labels = data[:, 0]
+    data = np.delete(data, 0, axis=1)
+    return labels.astype(np.uint8), data
 
 
-def preprocess_dataset(dataset: ndarray):
-    dataset[:, 1:] -= np.mean(dataset[:, 1:])
+def preprocess_dataset(dataset: ndarray) -> ndarray:
+    dataset[:, 1:] -= np.mean(dataset[:, 1:], dtype=np.float64)
     return dataset
 
 
-def apply_bias_trick_on_dataset(dataset: ndarray):
-    dataset = np.insert(dataset, 1, 1.0, axis=1)
-    return dataset
-
-
-def sample(dataset: ndarray, batch_size: int):
+def sample(dataset: ndarray, batch_size: int) -> ndarray:
     return dataset[np.random.choice(dataset.shape[0], batch_size, replace=False), :]
 
 
-def get_im2col_indices(x_shape: tuple, field_height: int, field_width: int, padding: int, stride: int):
+def get_im2col_indices(x_shape: tuple, field_height: int, field_width: int, padding: int, stride: int) -> tuple:
     # First figure out what the size of the output should be
     N, C, H, W = x_shape
     assert (H + 2 * padding - field_height) % stride == 0
@@ -44,7 +38,7 @@ def get_im2col_indices(x_shape: tuple, field_height: int, field_width: int, padd
     return k, i, j
 
 
-def im2col_indices(x: ndarray, field_height: int, field_width: int, padding: int, stride: int):
+def im2col_indices(x: ndarray, field_height: int, field_width: int, padding: int, stride: int) -> ndarray:
     """ An implementation of im2col based on some fancy indexing """
     # Zero-pad the input
     p = padding
@@ -60,7 +54,7 @@ def im2col_indices(x: ndarray, field_height: int, field_width: int, padding: int
 
 
 def col2im_indices(cols: ndarray, x_shape: tuple, field_height: int, field_width: int, padding: int,
-                   stride: int):
+                   stride: int) -> ndarray:
     """ An implementation of col2im based on fancy indexing and np.add.at """
     N, C, H, W = x_shape
     H_padded, W_padded = H + 2 * padding, W + 2 * padding
