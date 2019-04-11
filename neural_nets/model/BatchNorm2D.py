@@ -2,13 +2,14 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeightsAndParams
 from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
 
 
-class BatchNorm2DTest(TestModeLayer):
-    def __init__(self, weights: Cache, params: Cache):
-        super().__init__()
+class BatchNorm2DTest(TestModeLayerWithWeightsAndParams):
+    def __init__(self, layer_id: int, weights: Cache, params: Cache):
+        self.id = layer_id
         self.weights = weights
         self.params = params
 
@@ -37,6 +38,9 @@ class BatchNorm2DTest(TestModeLayer):
         output_data = output_flat.reshape(N, H, W, C).transpose(0, 3, 1, 2)
         return output_data
 
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_batch_norm_test(self)
+
 
 class BatchNorm2DTrain(TrainModeLayerWithWeights):
     def __init__(self, num_of_channels: int, momentum: float):
@@ -50,9 +54,6 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
 
     def get_name(self) -> Name:
         return Name.BATCH_NORM_2D_TRAIN
-
-    def get_num_of_channels(self) -> int:
-        return self.num_of_channels
 
     def get_weights(self) -> Cache:
         return self.weights
@@ -97,15 +98,14 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         N, C, H, W = dout.shape
         dout_flat = dout.transpose((0, 2, 3, 1)).reshape(-1, C)
 
-        gamma = self.weights.get(name=Name.GAMMA)
         N_f, D_f = dout_flat.shape
         xhat, ivar = layer_forward_run.get(name=Name.X_HAT), layer_forward_run.get(name=Name.IVAR)
 
-        dxhat = dout_flat * gamma
-        dinput_flat = 1. / N_f * ivar * (N_f * dxhat - np.sum(dxhat, axis=0) - xhat * np.sum(dxhat * xhat, axis=0))
         dbeta = np.sum(dout_flat, axis=0)
         dgamma = np.sum(xhat * dout_flat, axis=0)
 
+        dxhat = dout_flat * self.weights.get(name=Name.GAMMA)
+        dinput_flat = 1. / N_f * ivar * (N_f * dxhat - np.sum(dxhat, axis=0) - xhat * np.sum(dxhat * xhat, axis=0))
         dinput = dinput_flat.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
         layer_backward_run = Cache()
@@ -113,14 +113,14 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_BETA, value=dbeta)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayer:
+    def to_test(self, test_model_params: dict) -> TestModeLayerWithWeightsAndParams:
         weights = self.weights
         params = test_model_params.get(self.id)
-        layer = BatchNorm2DTest(weights=weights, params=params)
+        layer = BatchNorm2DTest(layer_id=self.id, weights=weights, params=params)
         return layer
 
-    def accept(self, visitor):
-        visitor.visit_batch_norm(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_batch_norm_train(self)
 
     @staticmethod
     def create_weights(num_of_channels: int) -> Cache:

@@ -4,15 +4,15 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import Visitor
+from neural_nets.model.Visitor import TrainLayerBaseVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
-class AdamCacheInitVisitor(Visitor):
+class AdamCacheInitVisitor(TrainLayerBaseVisitor):
     def __init__(self):
         self.cache_dict = {}
 
-    def visit_linear(self, layer: TrainModeLayerWithWeights):
+    def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
         weights = layer.get_weights()
 
@@ -28,10 +28,10 @@ class AdamCacheInitVisitor(Visitor):
 
         self.cache_dict[layer.get_id()] = layer_gradients_cache
 
-    def visit_weightless_layer(self, layer: TrainModeLayer):
+    def visit_weightless_train(self, layer: TrainModeLayer):
         pass
 
-    def visit_batch_norm(self, layer: TrainModeLayerWithWeights):
+    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
         weights = layer.get_weights()
 
@@ -51,7 +51,7 @@ class AdamCacheInitVisitor(Visitor):
         return self.cache_dict
 
 
-class AdamWeightsUpdateVisitor(Visitor):
+class AdamWeightsUpdateVisitor(TrainLayerBaseVisitor):
     def __init__(self, learning_rate: np.float64, beta1: np.float64, beta2: np.float64, model_backward_run: list,
                  grads_cache: dict):
         self.lr = learning_rate
@@ -62,7 +62,7 @@ class AdamWeightsUpdateVisitor(Visitor):
 
         self.num_iter = 1
 
-    def visit_linear(self, layer: TrainModeLayerWithWeights):
+    def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.WEIGHTS, Name.BIASES]
         grad_names = [Name.D_WEIGHTS, Name.D_BIASES]
 
@@ -75,10 +75,10 @@ class AdamWeightsUpdateVisitor(Visitor):
                      v_cache_names=v_cache_names,
                      layer=layer)
 
-    def visit_weightless_layer(self, layer: TrainModeLayer):
+    def visit_weightless_train(self, layer: TrainModeLayer):
         self.model_backward_run.pop()
 
-    def visit_batch_norm(self, layer: TrainModeLayerWithWeights):
+    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.GAMMA, Name.BETA]
         grad_names = [Name.D_GAMMA, Name.D_BETA]
 

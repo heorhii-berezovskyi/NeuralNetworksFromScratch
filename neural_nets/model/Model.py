@@ -4,6 +4,8 @@ from numpy import ndarray
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
 from neural_nets.model.TestModelInitializer import TestModelInitVisitor
+from neural_nets.model.TestModelLoadVisitor import TestModelLoadVisitor
+from neural_nets.model.TestModelSaveVisitor import TestModelSaveVisitor
 
 
 class TestModel:
@@ -35,6 +37,20 @@ class TestModel:
         predicted_class = np.argmax(input_data, axis=1)
         accuracy = np.mean(predicted_class == labels)
         return accuracy
+
+    def save(self, path: str):
+        visitor = TestModelSaveVisitor()
+        for layer in self.layers:
+            layer.accept(visitor)
+        all_params = visitor.get_result()
+        np.savez(path, **all_params)
+
+    def load(self, path: str):
+        all_params = np.load(path)
+        visitor = TestModelLoadVisitor(all_params=all_params)
+        for layer in self.layers:
+            layer.accept(visitor)
+        all_params.close()
 
 
 class TrainModel:

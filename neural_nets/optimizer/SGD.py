@@ -1,12 +1,12 @@
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import Visitor
+from neural_nets.model.Visitor import TrainLayerBaseVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 import numpy as np
 
 
-class SGDWeightsUpdateVisitor(Visitor):
+class SGDWeightsUpdateVisitor(TrainLayerBaseVisitor):
     """
     Updates weights on each type of train mode model layers through a stochastic gradient update procedure.
     """
@@ -15,15 +15,15 @@ class SGDWeightsUpdateVisitor(Visitor):
         self.lr = learning_rate
         self.model_backward_run = model_backward_run
 
-    def visit_linear(self, layer: TrainModeLayerWithWeights):
+    def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.WEIGHTS, Name.BIASES]
         grad_names = [Name.D_WEIGHTS, Name.D_BIASES]
         self._update(weight_names=weight_names, grad_names=grad_names, layer=layer)
 
-    def visit_weightless_layer(self, layer: TrainModeLayer):
+    def visit_weightless_train(self, layer: TrainModeLayer):
         self.model_backward_run.pop()
 
-    def visit_batch_norm(self, layer: TrainModeLayerWithWeights):
+    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.GAMMA, Name.BETA]
         grad_names = [Name.D_GAMMA, Name.D_BETA]
         self._update(weight_names=weight_names, grad_names=grad_names, layer=layer)

@@ -1,14 +1,15 @@
 import numpy as np
 from numpy import ndarray
 
-from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
-from neural_nets.model.Name import Name
 from neural_nets.model.Cache import Cache
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
+from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
 
 
-class LinearTest(TestModeLayer):
-    def __init__(self, weights: Cache):
-        super().__init__()
+class LinearTest(TestModeLayerWithWeights):
+    def __init__(self, layer_id: int, weights: Cache):
+        self.id = layer_id
         self.weights = weights
 
     def get_id(self) -> int:
@@ -24,6 +25,9 @@ class LinearTest(TestModeLayer):
 
     def get_weights(self) -> Cache:
         return self.weights
+
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_affine_test(self)
 
 
 class LinearTrain(TrainModeLayerWithWeights):
@@ -64,13 +68,13 @@ class LinearTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayer:
+    def to_test(self, test_model_params: dict) -> TestModeLayerWithWeights:
         weights = self.weights
-        layer = LinearTest(weights=weights)
+        layer = LinearTest(layer_id=self.id, weights=weights)
         return layer
 
-    def accept(self, visitor):
-        visitor.visit_linear(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_affine_train(self)
 
     @staticmethod
     def create_weights(input_dim: int, num_of_neurons: int) -> Cache:

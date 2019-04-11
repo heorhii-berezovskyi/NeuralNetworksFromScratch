@@ -4,11 +4,12 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
 
 
 class ReluTest(TestModeLayer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, layer_id: int):
+        self.id = layer_id
 
     def get_id(self) -> int:
         return self.id
@@ -19,6 +20,9 @@ class ReluTest(TestModeLayer):
     def forward(self, input_data: ndarray) -> ndarray:
         output = np.maximum(0., input_data)
         return output
+
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_weightless_test(self)
 
 
 class ReluTrain(TrainModeLayer):
@@ -45,7 +49,7 @@ class ReluTrain(TrainModeLayer):
         return dinput, layer_backward_run
 
     def to_test(self, test_model_params: dict) -> TestModeLayer:
-        return ReluTest()
+        return ReluTest(layer_id=self.id)
 
-    def accept(self, visitor):
-        visitor.visit_weightless_layer(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_weightless_train(self)

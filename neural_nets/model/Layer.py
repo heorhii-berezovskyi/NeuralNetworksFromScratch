@@ -14,12 +14,6 @@ class TestModeLayer:
     """
     __metaclass__ = ABCMeta
 
-    next_id = 0
-
-    def __init__(self):
-        self.id = TestModeLayer.next_id
-        TestModeLayer.next_id += 1
-
     @abstractmethod
     def get_id(self) -> int:
         raise NotImplementedError(NOT_IMPLEMENTED)
@@ -35,6 +29,26 @@ class TestModeLayer:
         :param input_data: is an input data of a layer.
         :return: output data of a layer.
         """
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def accept(self, visitor):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+
+class TestModeLayerWithWeights(TestModeLayer):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_weights(self) -> Cache:
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+
+class TestModeLayerWithWeightsAndParams(TestModeLayerWithWeights):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_params(self) -> Cache:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 

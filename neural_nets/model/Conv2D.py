@@ -2,14 +2,15 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
 from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
-class Conv2DTest(TestModeLayer):
-    def __init__(self, weights: Cache, stride: int, padding: int):
-        super().__init__()
+class Conv2DTest(TestModeLayerWithWeights):
+    def __init__(self, layer_id: int, weights: Cache, stride: int, padding: int):
+        self.id = layer_id
         self.weights = weights
         self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
         self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
@@ -22,6 +23,9 @@ class Conv2DTest(TestModeLayer):
 
     def get_name(self) -> Name:
         return Name.CONV2D_TEST
+
+    def get_weights(self) -> Cache:
+        return self.weights
 
     def forward(self, input_data: ndarray) -> ndarray:
         """
@@ -51,8 +55,8 @@ class Conv2DTest(TestModeLayer):
         output_data = output_data.transpose(3, 0, 1, 2)
         return output_data
 
-    def get_weights(self) -> Cache:
-        return self.weights
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_affine_test(self)
 
 
 class Conv2DTrain(TrainModeLayerWithWeights):
@@ -140,14 +144,15 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_WEIGHTS, value=dweights)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayer:
-        layer = Conv2DTest(weights=self.weights,
+    def to_test(self, test_model_params: dict) -> TestModeLayerWithWeights:
+        layer = Conv2DTest(layer_id=self.id,
+                           weights=self.weights,
                            padding=self.padding,
                            stride=self.stride)
         return layer
 
-    def accept(self, visitor):
-        visitor.visit_linear(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_affine_train(self)
 
     @staticmethod
     def create_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int) -> Cache:

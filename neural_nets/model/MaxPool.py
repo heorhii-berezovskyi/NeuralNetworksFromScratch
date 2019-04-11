@@ -4,12 +4,13 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TestLayerBaseVisitor, TrainLayerBaseVisitor
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
 class MaxPoolTest(TestModeLayer):
-    def __init__(self, pool_height: int, pool_width: int, stride: int):
-        super().__init__()
+    def __init__(self, layer_id: int, pool_height: int, pool_width: int, stride: int):
+        self.id = layer_id
         self.pool_height = pool_height
         self.pool_width = pool_width
         self.stride = stride
@@ -35,6 +36,9 @@ class MaxPoolTest(TestModeLayer):
         x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
         out = x_cols_max.reshape(out_h, out_w, N, C).transpose(2, 3, 0, 1)
         return out
+
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_weightless_test(self)
 
 
 class MaxPoolTrain(TrainModeLayer):
@@ -90,10 +94,11 @@ class MaxPoolTrain(TrainModeLayer):
         return dinput, layer_backward_run
 
     def to_test(self, test_model_params: dict) -> TestModeLayer:
-        layer = MaxPoolTest(pool_height=self.pool_height,
+        layer = MaxPoolTest(layer_id=self.id,
+                            pool_height=self.pool_height,
                             pool_width=self.pool_width,
                             stride=self.stride)
         return layer
 
-    def accept(self, visitor):
-        visitor.visit_weightless_layer(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_weightless_train(self)

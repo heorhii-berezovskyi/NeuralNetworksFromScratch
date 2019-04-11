@@ -2,13 +2,14 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeightsAndParams
 from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TestLayerBaseVisitor, TrainLayerBaseVisitor
 
 
-class BatchNorm1DTest(TestModeLayer):
-    def __init__(self, weights: Cache, params: Cache):
-        super().__init__()
+class BatchNorm1DTest(TestModeLayerWithWeightsAndParams):
+    def __init__(self, layer_id: int, weights: Cache, params: Cache):
+        self.id = layer_id
         self.weights = weights
         self.params = params
 
@@ -31,6 +32,9 @@ class BatchNorm1DTest(TestModeLayer):
         xn = (input_data - running_mean) / np.sqrt(running_variance + 1e-5)
         output_data = gamma * xn + beta
         return output_data
+
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_batch_norm_test(self)
 
 
 class BatchNorm1DTrain(TrainModeLayerWithWeights):
@@ -96,14 +100,14 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.D_BETA, value=dbeta)
         return dinput, layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayer:
+    def to_test(self, test_model_params: dict) -> TestModeLayerWithWeightsAndParams:
         weights = self.weights
         params = test_model_params.get(self.id)
-        layer = BatchNorm1DTest(weights=weights, params=params)
+        layer = BatchNorm1DTest(layer_id=self.id, weights=weights, params=params)
         return layer
 
-    def accept(self, visitor):
-        visitor.visit_batch_norm(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_batch_norm_train(self)
 
     @staticmethod
     def create_weights(input_dim: int) -> Cache:

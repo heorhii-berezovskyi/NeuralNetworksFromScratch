@@ -8,7 +8,6 @@ from neural_nets.model.Cache import Cache
 
 class SVMLoss(Loss):
     def __init__(self, delta: np.float64):
-        super().__init__()
         self.delta = delta
 
     def eval_data_loss(self, labels: ndarray, model_forward_run: list) -> tuple:

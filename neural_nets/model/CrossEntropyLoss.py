@@ -7,9 +7,6 @@ from neural_nets.model.Name import Name
 
 
 class CrossEntropyLoss(Loss):
-    def __init__(self):
-        super().__init__()
-
     def eval_data_loss(self, labels: ndarray, model_forward_run: list) -> tuple:
         scores = model_forward_run[-1].get(Name.OUTPUT)
         shifted_logits = scores - np.max(scores, axis=1, keepdims=True)

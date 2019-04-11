@@ -4,11 +4,12 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
+from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
 
 
 class Dropout2DTest(TestModeLayer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, layer_id: int):
+        self.id = layer_id
 
     def get_id(self) -> int:
         return self.id
@@ -19,6 +20,9 @@ class Dropout2DTest(TestModeLayer):
     def forward(self, input_data: ndarray) -> ndarray:
         output_data = input_data
         return output_data
+
+    def accept(self, visitor: TestLayerBaseVisitor):
+        visitor.visit_weightless_test(self)
 
 
 class Dropout2DTrain(TrainModeLayer):
@@ -50,8 +54,8 @@ class Dropout2DTrain(TrainModeLayer):
         return dinput, layer_backward_run
 
     def to_test(self, test_model_params: dict) -> TestModeLayer:
-        layer = Dropout2DTest()
+        layer = Dropout2DTest(layer_id=self.id)
         return layer
 
-    def accept(self, visitor):
-        visitor.visit_weightless_layer(self)
+    def accept(self, visitor: TrainLayerBaseVisitor):
+        visitor.visit_weightless_train(self)

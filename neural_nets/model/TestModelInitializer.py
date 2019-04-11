@@ -3,10 +3,10 @@ import numpy as np
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import Visitor
+from neural_nets.model.Visitor import TrainLayerBaseVisitor
 
 
-class TestModelInitVisitor(Visitor):
+class TestModelInitVisitor(TrainLayerBaseVisitor):
     """
     Initializes a dict of parameters required to build a test model.
     """
@@ -14,13 +14,13 @@ class TestModelInitVisitor(Visitor):
     def __init__(self):
         self.result = {}
 
-    def visit_linear(self, layer: TrainModeLayerWithWeights):
+    def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         pass
 
-    def visit_weightless_layer(self, layer: TrainModeLayer):
+    def visit_weightless_train(self, layer: TrainModeLayer):
         pass
 
-    def visit_batch_norm(self, layer: TrainModeLayerWithWeights):
+    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         params = Cache()
         weights = layer.get_weights()
 
