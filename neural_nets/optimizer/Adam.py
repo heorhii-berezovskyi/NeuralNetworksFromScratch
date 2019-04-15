@@ -4,13 +4,13 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerBaseVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
-class AdamCacheInitVisitor(TrainLayerBaseVisitor):
+class AdamMemoryInitVisitor(TrainLayerVisitor):
     def __init__(self):
-        self.cache_dict = {}
+        self.memory = []
 
     def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
@@ -25,11 +25,10 @@ class AdamCacheInitVisitor(TrainLayerBaseVisitor):
                                   value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
         layer_gradients_cache.add(name=Name.ADAM_V_BIASES,
                                   value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
-
-        self.cache_dict[layer.get_id()] = layer_gradients_cache
+        self.memory.append(layer_gradients_cache)
 
     def visit_weightless_train(self, layer: TrainModeLayer):
-        pass
+        self.memory.append(Cache())
 
     def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
@@ -44,16 +43,15 @@ class AdamCacheInitVisitor(TrainLayerBaseVisitor):
                                   value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
         layer_gradients_cache.add(name=Name.ADAM_V_BETA,
                                   value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
+        self.memory.append(layer_gradients_cache)
 
-        self.cache_dict[layer.get_id()] = layer_gradients_cache
-
-    def get_grads_cache(self) -> dict:
-        return self.cache_dict
+    def get_grads_cache(self) -> list:
+        return self.memory
 
 
-class AdamWeightsUpdateVisitor(TrainLayerBaseVisitor):
+class AdamWeightsUpdateVisitor(TrainLayerVisitor):
     def __init__(self, learning_rate: np.float64, beta1: np.float64, beta2: np.float64, model_backward_run: list,
-                 grads_cache: dict):
+                 grads_cache: list):
         self.lr = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
@@ -123,10 +121,10 @@ class Adam(Optimizer):
         self.lr = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
-        self.grads_cache = self.init_cache()
+        self.grads_cache = self._init_memory()
 
-    def init_cache(self) -> dict:
-        visitor = AdamCacheInitVisitor()
+    def _init_memory(self) -> list:
+        visitor = AdamMemoryInitVisitor()
         for layer in self.model.get_layers():
             layer.accept(visitor)
         return visitor.get_grads_cache()

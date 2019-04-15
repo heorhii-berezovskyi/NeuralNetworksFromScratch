@@ -4,6 +4,7 @@ from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Name import Name
+from neural_nets.optimizer.Optimizer import Optimizer
 
 NOT_IMPLEMENTED = "You should implement this."
 
@@ -73,30 +74,30 @@ class TrainModeLayer:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
+    def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         """
         Performs a forward pass of a layer, updating a test model parameters if required.
         :param input_data: is a layer input data.
-        :param test_model_params: is a dict of parameters, required to build a test model.
-        :return: layer forward run.
+        :param layer_forward_run: previous cache of this layer.
+        :return: new layer forward run.
         """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> Cache:
         """
         Performs a backward pass of a layer, based on the layer forward run and the gradient by this layer.
         :param dout: is a gradient by this layer.
         :param layer_forward_run: is a layer forward run parameters.
-        :return: gradient by it's input data and a layer backward run parameters.
+        :return: gradient by input data and weights, if present.
         """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def to_test(self, test_model_params: dict) -> TestModeLayer:
+    def to_test(self, test_layer_params: Cache) -> TestModeLayer:
         """
         Creates a test mode layer representative based on it's weights and test model parameters.
-        :param test_model_params: is a dict of a parameters, required to build a test model layers.
+        :param test_layer_params: is a Cache of a parameters, required to build a test model layers.
         :return: a test mode layer object.
         """
         raise NotImplementedError(NOT_IMPLEMENTED)
@@ -118,3 +119,4 @@ class TrainModeLayerWithWeights(TrainModeLayer):
     @abstractmethod
     def get_weights(self) -> Cache:
         raise NotImplementedError(NOT_IMPLEMENTED)
+

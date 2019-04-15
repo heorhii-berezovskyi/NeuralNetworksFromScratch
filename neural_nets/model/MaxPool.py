@@ -4,7 +4,7 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TestLayerBaseVisitor, TrainLayerBaseVisitor
+from neural_nets.model.Visitor import TestLayerVisitor, TrainLayerVisitor
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
@@ -37,7 +37,7 @@ class MaxPoolTest(TestModeLayer):
         out = x_cols_max.reshape(out_h, out_w, N, C).transpose(2, 3, 0, 1)
         return out
 
-    def accept(self, visitor: TestLayerBaseVisitor):
+    def accept(self, visitor: TestLayerVisitor):
         visitor.visit_weightless_test(self)
 
 
@@ -54,7 +54,7 @@ class MaxPoolTrain(TrainModeLayer):
     def get_name(self) -> Name:
         return Name.MAX_POOL_TRAIN
 
-    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
+    def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         N, C, H, W = input_data.shape
 
         assert (H - self.pool_height) % self.stride == 0, 'Invalid height'
@@ -69,17 +69,17 @@ class MaxPoolTrain(TrainModeLayer):
         x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
         output_data = x_cols_max.reshape(out_h, out_w, N, C).transpose(2, 3, 0, 1)
 
-        layer_forward_run = Cache()
-        layer_forward_run.add(name=Name.INPUT, value=input_data)
-        layer_forward_run.add(name=Name.OUTPUT, value=output_data)
-        layer_forward_run.add(name=Name.X_COLS, value=x_cols)
-        layer_forward_run.add(name=Name.X_COLS_ARGMAX, value=x_cols_argmax)
-        return layer_forward_run
+        new_layer_forward_run = Cache()
+        new_layer_forward_run.add(name=Name.INPUT, value=input_data)
+        new_layer_forward_run.add(name=Name.OUTPUT, value=output_data)
+        new_layer_forward_run.add(name=Name.X_COLS, value=x_cols)
+        new_layer_forward_run.add(name=Name.X_COLS_ARGMAX, value=x_cols_argmax)
+        return new_layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
-        input_data = layer_forward_run.get(name=Name.INPUT)
-        x_cols = layer_forward_run.get(name=Name.X_COLS)
-        x_cols_argmax = layer_forward_run.get(name=Name.X_COLS_ARGMAX)
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> Cache:
+        input_data = layer_forward_run.pop(name=Name.INPUT)
+        x_cols = layer_forward_run.pop(name=Name.X_COLS)
+        x_cols_argmax = layer_forward_run.pop(name=Name.X_COLS_ARGMAX)
 
         N, C, H, W = input_data.shape
 
@@ -91,14 +91,14 @@ class MaxPoolTrain(TrainModeLayer):
         dinput = dinput.reshape(input_data.shape)
 
         layer_backward_run = Cache()
-        return dinput, layer_backward_run
+        layer_backward_run.add(name=Name.D_INPUT, value=dinput)
+        return layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayer:
-        layer = MaxPoolTest(layer_id=self.id,
-                            pool_height=self.pool_height,
-                            pool_width=self.pool_width,
-                            stride=self.stride)
-        return layer
+    def to_test(self, test_layer_params: Cache) -> TestModeLayer:
+        return MaxPoolTest(layer_id=self.id,
+                           pool_height=self.pool_height,
+                           pool_width=self.pool_width,
+                           stride=self.stride)
 
-    def accept(self, visitor: TrainLayerBaseVisitor):
+    def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_weightless_train(self)

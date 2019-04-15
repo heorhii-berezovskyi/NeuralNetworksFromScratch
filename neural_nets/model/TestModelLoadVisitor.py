@@ -1,11 +1,12 @@
 from numpy.lib.npyio import NpzFile
 
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TestModeLayer, TestModeLayerWithWeights, TestModeLayerWithWeightsAndParams
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TestLayerBaseVisitor
+from neural_nets.model.Visitor import TestLayerVisitor
 
 
-class TestModelLoadVisitor(TestLayerBaseVisitor):
+class TestModelLoadVisitor(TestLayerVisitor):
     """
     Initializes a dict of parameters required to build a test model.
     """
@@ -17,22 +18,16 @@ class TestModelLoadVisitor(TestLayerBaseVisitor):
         pass
 
     def visit_affine_test(self, layer: TestModeLayerWithWeights):
-        weight_names = [Name.WEIGHTS, Name.BIASES]
-        self._load_weights(layer=layer, weight_names=weight_names)
+        layer_id = layer.get_name().value + str(layer.get_id())
+        self._load_data(data=layer.get_weights(), item_names=[Name.WEIGHTS, Name.BIASES], layer_name=layer_id)
 
     def visit_batch_norm_test(self, layer: TestModeLayerWithWeightsAndParams):
-        weight_names = [Name.GAMMA, Name.BETA]
-        self._load_weights(layer=layer, weight_names=weight_names)
+        layer_id = layer.get_name().value + str(layer.get_id())
+        self._load_data(data=layer.get_weights(), item_names=[Name.GAMMA, Name.BETA], layer_name=layer_id)
+        self._load_data(data=layer.get_params(), item_names=[Name.RUNNING_MEAN, Name.RUNNING_VAR], layer_name=layer_id)
 
-        layer_name_plus_id = layer.get_name().value + str(layer.get_id())
-        for param_name in [Name.RUNNING_MEAN, Name.RUNNING_VARIANCE]:
-            param_key = layer_name_plus_id + param_name.value
-            param_value = self.all_params[param_key]
-            layer.get_params().update(name=param_name, value=param_value)
-
-    def _load_weights(self, layer: TestModeLayerWithWeights, weight_names: list):
-        layer_name_plus_id = layer.get_name().value + str(layer.get_id())
-        for weight_name in weight_names:
-            weight_key = layer_name_plus_id + weight_name.value
-            weight_value = self.all_params[weight_key]
-            layer.get_weights().update(name=weight_name, value=weight_value)
+    def _load_data(self, data: Cache, item_names: list, layer_name: str):
+        for item_name in item_names:
+            data_key = layer_name + item_name.value
+            data_value = self.all_params[data_key]
+            data.update(name=item_name, value=data_value)

@@ -4,13 +4,13 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerBaseVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
-class AdagradCacheInitVisitor(TrainLayerBaseVisitor):
+class AdagradMemoryInitVisitor(TrainLayerVisitor):
     def __init__(self):
-        self.cache_dict = {}
+        self.memory = []
 
     def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
@@ -20,11 +20,10 @@ class AdagradCacheInitVisitor(TrainLayerBaseVisitor):
                                   value=np.zeros_like(weights.get(name=Name.WEIGHTS), dtype=np.float64))
         layer_gradients_cache.add(name=Name.D_BIASES_CACHE,
                                   value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
-
-        self.cache_dict[layer.get_id()] = layer_gradients_cache
+        self.memory.append(layer_gradients_cache)
 
     def visit_weightless_train(self, layer: TrainModeLayer):
-        pass
+        self.memory.append(Cache())
 
     def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
@@ -34,15 +33,14 @@ class AdagradCacheInitVisitor(TrainLayerBaseVisitor):
                                   value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
         layer_gradients_cache.add(name=Name.D_BETA_CACHE,
                                   value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
+        self.memory.append(layer_gradients_cache)
 
-        self.cache_dict[layer.get_id()] = layer_gradients_cache
-
-    def get_grads_cache(self) -> dict:
-        return self.cache_dict
+    def get_result(self) -> list:
+        return self.memory
 
 
-class AdagradWeightsUpdateVisitor(TrainLayerBaseVisitor):
-    def __init__(self, learning_rate: float, model_backward_run: list, grads_cache: dict):
+class AdagradWeightsUpdateVisitor(TrainLayerVisitor):
+    def __init__(self, learning_rate: float, model_backward_run: list, grads_cache: list):
         self.lr = learning_rate
         self.model_backward_run = model_backward_run
         self.grads_cache = grads_cache
@@ -81,13 +79,13 @@ class Adagrad(Optimizer):
     def __init__(self, model: TrainModel, learning_rate: float):
         super().__init__(model=model)
         self.lr = learning_rate
-        self.grads_cache = self.init_cache()
+        self.grads_cache = self.init_memory()
 
-    def init_cache(self) -> dict:
-        visitor = AdagradCacheInitVisitor()
+    def init_memory(self) -> list:
+        visitor = AdagradMemoryInitVisitor()
         for layer in self.model.get_layers():
             layer.accept(visitor)
-        return visitor.get_grads_cache()
+        return visitor.get_result()
 
     def step(self, model_backward_run: list):
         model_backward_run.reverse()

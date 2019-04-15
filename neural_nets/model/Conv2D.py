@@ -4,7 +4,7 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
@@ -55,24 +55,20 @@ class Conv2DTest(TestModeLayerWithWeights):
         output_data = output_data.transpose(3, 0, 1, 2)
         return output_data
 
-    def accept(self, visitor: TestLayerBaseVisitor):
+    def accept(self, visitor: TestLayerVisitor):
         visitor.visit_affine_test(self)
 
 
 class Conv2DTrain(TrainModeLayerWithWeights):
-    def __init__(self, num_filters: int, filter_depth: int, filter_height: int, filter_width: int, stride: int,
+    def __init__(self, weights: Cache, stride: int,
                  padding: int):
         super().__init__()
-        self.num_filters = num_filters
-        self.filter_depth = filter_depth
-        self.filter_height = filter_height
-        self.filter_width = filter_width
         self.stride = stride
         self.padding = padding
-        self.weights = self.create_weights(num_filters=num_filters,
-                                           filter_depth=filter_depth,
-                                           filter_height=filter_height,
-                                           filter_width=filter_width)
+        self.weights = weights
+        self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
+        self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
+        self.filter_width = weights.get(name=Name.WEIGHTS).shape[3]
 
     def get_id(self) -> int:
         return self.id
@@ -83,14 +79,11 @@ class Conv2DTrain(TrainModeLayerWithWeights):
     def get_weights(self) -> Cache:
         return self.weights
 
-    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
+    def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         """
           A fast implementation of the forward pass for a convolutional layer
           based on im2col and col2im.
         """
-        layer_forward_run = Cache()
-        layer_forward_run.add(name=Name.INPUT, value=input_data)
-
         N, C, H, W = input_data.shape
 
         # Check dimensions
@@ -113,17 +106,19 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         output_data = res.reshape(self.num_filters, out_height, out_width, N)
         output_data = output_data.transpose(3, 0, 1, 2)
 
-        layer_forward_run.add(name=Name.X_COLS, value=x_cols)
-        layer_forward_run.add(name=Name.OUTPUT, value=output_data)
-        return layer_forward_run
+        new_layer_forward_run = Cache()
+        new_layer_forward_run.add(name=Name.INPUT, value=input_data)
+        new_layer_forward_run.add(name=Name.X_COLS, value=x_cols)
+        new_layer_forward_run.add(name=Name.OUTPUT, value=output_data)
+        return new_layer_forward_run
 
-    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> Cache:
         """
           A fast implementation of the backward pass for a convolutional layer
           based on im2col and col2im.
         """
         weights = self.weights.get(name=Name.WEIGHTS)
-        input_data, x_cols = layer_forward_run.get(name=Name.INPUT), layer_forward_run.get(name=Name.X_COLS)
+        input_data, x_cols = layer_forward_run.pop(name=Name.INPUT), layer_forward_run.pop(name=Name.X_COLS)
 
         dbiases = np.sum(dout, axis=(0, 2, 3))
 
@@ -140,26 +135,26 @@ class Conv2DTrain(TrainModeLayerWithWeights):
                                 stride=self.stride)
 
         layer_backward_run = Cache()
+        layer_backward_run.add(name=Name.D_INPUT, value=dinput)
         layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
         layer_backward_run.add(name=Name.D_WEIGHTS, value=dweights)
-        return dinput, layer_backward_run
+        return layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayerWithWeights:
-        layer = Conv2DTest(layer_id=self.id,
-                           weights=self.weights,
-                           padding=self.padding,
-                           stride=self.stride)
-        return layer
+    def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
+        return Conv2DTest(layer_id=self.id,
+                          weights=self.weights,
+                          padding=self.padding,
+                          stride=self.stride)
 
-    def accept(self, visitor: TrainLayerBaseVisitor):
+    def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)
 
-    @staticmethod
-    def create_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int) -> Cache:
+    @classmethod
+    def init_weights(cls, num_filters: int, filter_depth: int, filter_height: int, filter_width: int, stride: int,
+                     padding: int):
         weights = Cache()
         weights.add(name=Name.WEIGHTS,
                     value=np.random.rand(num_filters, filter_depth, filter_height, filter_width) * np.sqrt(
                         2. / (filter_depth * filter_height * filter_width)))
-
         weights.add(name=Name.BIASES, value=np.zeros(num_filters, dtype=np.float64))
-        return weights
+        return cls(weights=weights, stride=stride, padding=padding)

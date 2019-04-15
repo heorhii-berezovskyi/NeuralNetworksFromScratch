@@ -67,7 +67,6 @@ def run():
     train_model.add(layer=l14)
     train_model.add(layer=l15)
 
-    # optimizer = SGD(model=train_model, learning_rate=0.001)
     # optimizer = SGDMomentum(model=train_model, learning_rate=0.0001, mu=0.9)
     # optimizer = SGDNesterovMomentum(model=train_model, learning_rate=0.02, mu=0.9)
     # optimizer = Adagrad(model=train_model, learning_rate=0.02)
@@ -84,37 +83,37 @@ def run():
     test_accuracies = []
     train_accuracies = []
 
-    test_model_params = train_model.init_test_model_params()
+    model_forward_run = train_model.init_model()
 
     batch_size = 64
     test_batch_size = 5000
-    for i in range(1000):
+    for i in range(2000):
         batch = sample(dataset=train_dataset, batch_size=batch_size)
         label_batch, image_batch = split_into_labels_and_data(batch)
         image_batch = image_batch.reshape((batch_size, 1, 28, 28))
 
-        model_forward_run = train_model.forward(test_model_params=test_model_params, images=image_batch)
-        data_loss, loss_run = loss_function.eval_data_loss(labels=label_batch, model_forward_run=model_forward_run)
+        model_forward_run, scores = train_model.forward(model_forward_run=model_forward_run, images=image_batch)
+        data_loss, loss_run = loss_function.eval_data_loss(labels=label_batch, scores=scores )
 
         losses.append(data_loss)
 
-        # model_backward_run = optimizer.backward_on_model(loss_function=loss_function,
-        #                                                  model_forward_run=model_forward_run,
-        #                                                  loss_run=loss_run)
-        #
-        # optimizer.step(model_backward_run=model_backward_run)
+        model_backward_run = optimizer.backward_on_model(loss_function=loss_function,
+                                                         model_forward_run=model_forward_run,
+                                                         loss_run=loss_run)
+
+        optimizer.step(model_backward_run=model_backward_run)
 
         print(i)
-        if i % 200 == 0:
-            test_model = train_model.to_test(test_model_params)
+        if i % 500 == 0:
+            test_model = train_model.to_test(model_forward_run)
 
-            path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv1000.npz'
-            test_model.load(path=path)
+            # path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv400.npz'
+            # test_model.load(path=path)
 
-            # path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv'
-            # path += str(i)
-            # test_model.save(path)
-            # print('Saved model to: {}'.format(path))
+            path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv'
+            path += str(i)
+            test_model.save(path)
+            print('Saved model to: {}'.format(path))
 
             batch_test_accuracies = []
             for k in range(4):

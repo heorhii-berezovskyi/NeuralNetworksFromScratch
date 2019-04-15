@@ -5,7 +5,7 @@ from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights, T
 NOT_IMPLEMENTED = "You should implement this."
 
 
-class TrainLayerBaseVisitor:
+class TrainLayerVisitor:
     """
     Visitor design pattern representative. Visits each type of train mode model layers.
     """
@@ -24,7 +24,7 @@ class TrainLayerBaseVisitor:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 
-class TestLayerBaseVisitor:
+class TestLayerVisitor:
     """
     Visitor design pattern representative. Visits each type of train mode model layers.
     """

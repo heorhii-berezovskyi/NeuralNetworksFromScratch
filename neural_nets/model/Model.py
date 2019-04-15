@@ -3,7 +3,7 @@ from numpy import ndarray
 
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.TestModelInitializer import TestModelInitVisitor
+from neural_nets.model.TrainModelInitVisitor import TrainModelInitVisitor
 from neural_nets.model.TestModelLoadVisitor import TestModelLoadVisitor
 from neural_nets.model.TestModelSaveVisitor import TestModelSaveVisitor
 
@@ -71,40 +71,41 @@ class TrainModel:
         """
         self.layers.append(layer)
 
-    def init_test_model_params(self) -> dict:
+    def init_model(self) -> list:
         """
         Initializes params required for building a test model.
-        :return: test model parameters dict.
+        :return: list of prepared params.
         """
-        visitor = TestModelInitVisitor()
+        visitor = TrainModelInitVisitor()
         for layer in self.layers:
             layer.accept(visitor)
         return visitor.get_result()
 
-    def forward(self, test_model_params: dict, images: ndarray) -> list:
+    def forward(self, model_forward_run: list, images: ndarray) -> tuple:
         """
         Runs layer by layer in a forward mode, passing an input data and updating test model parameters.
-        :param test_model_params: is a dict of parameters required for a test model.
+        :param model_forward_run: is a list of cached parameters required for an optimizer and to build a test model.
         :param images: is a batch of training images.
-        :return: model forward run – list of parameters, saved by each layer through a forward pass.
+        :return: next model forward run and model scores.
         """
         input_data = images
-        model_forward_run = []
-        for layer in self.layers:
-            layer_forward_run = layer.forward(input_data, test_model_params)
-            model_forward_run.append(layer_forward_run)
-            input_data = layer_forward_run.get(Name.OUTPUT)
-        return model_forward_run
+        next_model_forward_run = []
+        for layer, layer_forward_run in zip(self.layers, model_forward_run):
+            new_layer_forward_run = layer.forward(input_data, layer_forward_run)
+            input_data = new_layer_forward_run.pop(Name.OUTPUT)
+            next_model_forward_run.append(new_layer_forward_run)
+        scores = input_data
+        return next_model_forward_run, scores
 
-    def to_test(self, test_model_params: dict) -> TestModel:
+    def to_test(self, model_forward_run: list) -> TestModel:
         """
         Builds a test model based on a train model and test model parameters.
-        :param test_model_params: is a dict of parameters required to build a test model and updated through a multiple
+        :param model_forward_run: is a list of parameters required to build a test model and updated through a multiple
                forward pass of a train model.
         :return: a built test model.
         """
         test_model = TestModel()
-        for layer in self.layers:
-            test_layer = layer.to_test(test_model_params)
+        for train_layer, layer_forward_run in zip(self.layers, model_forward_run):
+            test_layer = train_layer.to_test(layer_forward_run)
             test_model.add(test_layer)
         return test_model

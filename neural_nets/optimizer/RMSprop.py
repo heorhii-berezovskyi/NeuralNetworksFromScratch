@@ -4,13 +4,13 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerBaseVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
-class RMSpropCacheInitVisitor(TrainLayerBaseVisitor):
+class RMSpropCacheInitVisitor(TrainLayerVisitor):
     def __init__(self):
-        self.dict_cache = {}
+        self.memory = []
 
     def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
@@ -20,11 +20,10 @@ class RMSpropCacheInitVisitor(TrainLayerBaseVisitor):
                                   value=np.zeros_like(weights.get(name=Name.WEIGHTS), dtype=np.float64))
         layer_gradients_cache.add(name=Name.D_BIASES_CACHE,
                                   value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
-
-        self.dict_cache[layer.get_id()] = layer_gradients_cache
+        self.memory.append(layer_gradients_cache)
 
     def visit_weightless_train(self, layer: TrainModeLayer):
-        pass
+        self.memory.append(Cache())
 
     def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
         layer_gradients_cache = Cache()
@@ -34,19 +33,18 @@ class RMSpropCacheInitVisitor(TrainLayerBaseVisitor):
                                   value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
         layer_gradients_cache.add(name=Name.D_BETA_CACHE,
                                   value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
+        self.memory.append(layer_gradients_cache)
 
-        self.dict_cache[layer.get_id()] = layer_gradients_cache
-
-    def get_grads_cache(self) -> dict:
-        return self.dict_cache
+    def get_memory(self) -> list:
+        return self.memory
 
 
-class RMSpropWeightsUpdateVisitor(TrainLayerBaseVisitor):
-    def __init__(self, learning_rate: np.float64, decay_rate: np.float64, model_backward_run: list, grads_cache: dict):
+class RMSpropWeightsUpdateVisitor(TrainLayerVisitor):
+    def __init__(self, learning_rate: np.float64, decay_rate: np.float64, model_backward_run: list, memory: list):
         self.lr = learning_rate
         self.decay_rate = decay_rate
         self.model_backward_run = model_backward_run
-        self.grads_cache = grads_cache
+        self.memory = memory
 
     def visit_affine_train(self, layer: TrainModeLayerWithWeights):
         weight_names = [Name.WEIGHTS, Name.BIASES]
@@ -71,9 +69,9 @@ class RMSpropWeightsUpdateVisitor(TrainLayerBaseVisitor):
             learning_param = layer_weights.get(name=wight_name)
             param_grad = layer_backward_run.get(grad_name)
 
-            param_grad_cache = self.grads_cache[layer_id].get(cache_name)
+            param_grad_cache = self.memory[layer_id].get(cache_name)
             param_grad_cache = self.decay_rate * param_grad_cache + (1. - self.decay_rate) * param_grad ** 2
-            self.grads_cache[layer_id].update(cache_name, param_grad_cache)
+            self.memory[layer_id].update(cache_name, param_grad_cache)
 
             learning_param += -self.lr * param_grad / (np.sqrt(param_grad_cache) + 1e-6)
             layer.get_weights().update(name=wight_name, value=learning_param)
@@ -84,19 +82,19 @@ class RMSprop(Optimizer):
         super().__init__(model=model)
         self.decay_rate = decay_rate
         self.lr = learning_rate
-        self.grads_cache = self.init_cache()
+        self.memory = self._init_memory()
 
-    def init_cache(self) -> dict:
+    def _init_memory(self) -> list:
         visitor = RMSpropCacheInitVisitor()
         for layer in self.model.get_layers():
             layer.accept(visitor)
-        return visitor.get_grads_cache()
+        return visitor.get_memory()
 
     def step(self, model_backward_run: list):
         model_backward_run.reverse()
         visitor = RMSpropWeightsUpdateVisitor(learning_rate=self.lr,
                                               decay_rate=self.decay_rate,
                                               model_backward_run=model_backward_run,
-                                              grads_cache=self.grads_cache)
+                                              memory=self.memory)
         for layer in reversed(self.model.get_layers()):
             layer.accept(visitor)

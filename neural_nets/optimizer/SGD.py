@@ -1,12 +1,12 @@
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerBaseVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 import numpy as np
 
 
-class SGDWeightsUpdateVisitor(TrainLayerBaseVisitor):
+class SGDWeightsUpdateVisitor(TrainLayerVisitor):
     """
     Updates weights on each type of train mode model layers through a stochastic gradient update procedure.
     """

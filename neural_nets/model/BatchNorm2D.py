@@ -4,7 +4,7 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeightsAndParams
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerBaseVisitor, TestLayerBaseVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
 
 
 class BatchNorm2DTest(TestModeLayerWithWeightsAndParams):
@@ -27,7 +27,7 @@ class BatchNorm2DTest(TestModeLayerWithWeightsAndParams):
 
     def forward(self, input_data: ndarray) -> ndarray:
         gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
-        running_mean, running_variance = self.params.get(Name.RUNNING_MEAN), self.params.get(name=Name.RUNNING_VARIANCE)
+        running_mean, running_variance = self.params.get(Name.RUNNING_MEAN), self.params.get(name=Name.RUNNING_VAR)
 
         N, C, H, W = input_data.shape
         x_flat = input_data.transpose((0, 2, 3, 1)).reshape(-1, C)
@@ -38,16 +38,15 @@ class BatchNorm2DTest(TestModeLayerWithWeightsAndParams):
         output_data = output_flat.reshape(N, H, W, C).transpose(0, 3, 1, 2)
         return output_data
 
-    def accept(self, visitor: TestLayerBaseVisitor):
+    def accept(self, visitor: TestLayerVisitor):
         visitor.visit_batch_norm_test(self)
 
 
 class BatchNorm2DTrain(TrainModeLayerWithWeights):
-    def __init__(self, num_of_channels: int, momentum: float):
+    def __init__(self, weights: Cache, momentum: float):
         super().__init__()
-        self.num_of_channels = num_of_channels
         self.momentum = momentum
-        self.weights = self.create_weights(num_of_channels=num_of_channels)
+        self.weights = weights
 
     def get_id(self) -> int:
         return self.id
@@ -58,8 +57,7 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
     def get_weights(self) -> Cache:
         return self.weights
 
-    def forward(self, input_data: ndarray, test_model_params: dict) -> Cache:
-        gamma, beta = self.weights.get(name=Name.GAMMA), self.weights.get(name=Name.BETA)
+    def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         N, C, H, W = input_data.shape
 
         input_flat = input_data.transpose((0, 2, 3, 1)).reshape(-1, C)
@@ -70,36 +68,27 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         sqrtvar = np.sqrt(var + 1e-5)
         ivar = 1. / sqrtvar
         xhat = xmu * ivar
-        out_flat = gamma * xhat + beta
+        out_flat = self.weights.get(name=Name.GAMMA) * xhat + self.weights.get(name=Name.BETA)
 
         output_data = out_flat.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
-        running_mean = test_model_params[self.id].get(name=Name.RUNNING_MEAN)
-        running_variance = test_model_params[self.id].get(name=Name.RUNNING_VARIANCE)
+        running_mean = layer_forward_run.pop(name=Name.RUNNING_MEAN) * self.momentum + (1.0 - self.momentum) * mu
+        running_variance = layer_forward_run.pop(name=Name.RUNNING_VAR) * self.momentum + (1.0 - self.momentum) * var
 
-        # Update running average of mean
-        running_mean *= self.momentum
-        running_mean += (1.0 - self.momentum) * mu
+        new_layer_forward_run = Cache()
+        new_layer_forward_run.add(name=Name.X_HAT, value=xhat)
+        new_layer_forward_run.add(name=Name.IVAR, value=ivar)
+        new_layer_forward_run.add(name=Name.OUTPUT, value=output_data)
+        new_layer_forward_run.add(name=Name.RUNNING_MEAN, value=running_mean)
+        new_layer_forward_run.add(name=Name.RUNNING_VAR, value=running_variance)
+        return new_layer_forward_run
 
-        # Update running average of variance
-        running_variance *= self.momentum
-        running_variance += (1.0 - self.momentum) * var
-
-        test_model_params[self.id].update(name=Name.RUNNING_MEAN, value=running_mean)
-        test_model_params[self.id].update(name=Name.RUNNING_VARIANCE, value=running_variance)
-
-        layer_forward_run = Cache()
-        layer_forward_run.add(name=Name.X_HAT, value=xhat)
-        layer_forward_run.add(name=Name.IVAR, value=ivar)
-        layer_forward_run.add(name=Name.OUTPUT, value=output_data)
-        return layer_forward_run
-
-    def backward(self, dout: ndarray, layer_forward_run: Cache) -> tuple:
+    def backward(self, dout: ndarray, layer_forward_run: Cache) -> Cache:
         N, C, H, W = dout.shape
         dout_flat = dout.transpose((0, 2, 3, 1)).reshape(-1, C)
 
         N_f, D_f = dout_flat.shape
-        xhat, ivar = layer_forward_run.get(name=Name.X_HAT), layer_forward_run.get(name=Name.IVAR)
+        xhat, ivar = layer_forward_run.pop(name=Name.X_HAT), layer_forward_run.pop(name=Name.IVAR)
 
         dbeta = np.sum(dout_flat, axis=0)
         dgamma = np.sum(xhat * dout_flat, axis=0)
@@ -109,22 +98,20 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         dinput = dinput_flat.reshape(N, H, W, C).transpose(0, 3, 1, 2)
 
         layer_backward_run = Cache()
+        layer_backward_run.add(name=Name.D_INPUT, value=dinput)
         layer_backward_run.add(name=Name.D_GAMMA, value=dgamma)
         layer_backward_run.add(name=Name.D_BETA, value=dbeta)
-        return dinput, layer_backward_run
+        return layer_backward_run
 
-    def to_test(self, test_model_params: dict) -> TestModeLayerWithWeightsAndParams:
-        weights = self.weights
-        params = test_model_params.get(self.id)
-        layer = BatchNorm2DTest(layer_id=self.id, weights=weights, params=params)
-        return layer
+    def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeightsAndParams:
+        return BatchNorm2DTest(layer_id=self.id, weights=self.weights, params=test_layer_params)
 
-    def accept(self, visitor: TrainLayerBaseVisitor):
+    def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_batch_norm_train(self)
 
-    @staticmethod
-    def create_weights(num_of_channels: int) -> Cache:
+    @classmethod
+    def init_weights(cls, num_of_channels: int, momentum: float):
         weights = Cache()
         weights.add(name=Name.GAMMA, value=np.ones(num_of_channels, dtype=np.float64))
         weights.add(name=Name.BETA, value=np.zeros(num_of_channels, dtype=np.float64))
-        return weights
+        return cls(weights, momentum=momentum)

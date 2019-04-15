@@ -28,7 +28,7 @@ class Name(Enum):
 
     # Parameter names.
     RUNNING_MEAN = 'running_mean'
-    RUNNING_VARIANCE = 'running_variance'
+    RUNNING_VAR = 'running_variance'
     X_HAT = 'normalized input in a batch norm layer'
     IVAR = 'inverted variance'
 
@@ -43,6 +43,8 @@ class Name(Enum):
     X_COLS = 'image reshaped to columns of patches'
     X_COLS_ARGMAX = 'indexes of maximum values of columns of patches'
     MASK = 'matrix of boolean values'
+
+    D_INPUT = 'gradient of a layer by its input'
 
     # Gradients of a linear layer.
     D_WEIGHTS = 'linear weights gradient'

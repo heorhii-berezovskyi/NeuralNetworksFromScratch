@@ -11,7 +11,7 @@ class Loss:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def eval_data_loss(self, labels: ndarray, model_forward_run: list) -> tuple:
+    def eval_data_loss(self, labels: ndarray, scores: ndarray) -> tuple:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod

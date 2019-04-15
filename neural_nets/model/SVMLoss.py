@@ -1,20 +1,19 @@
 import numpy as np
 from numpy import ndarray
 
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
-from neural_nets.model.Cache import Cache
 
 
 class SVMLoss(Loss):
     def __init__(self, delta: np.float64):
         self.delta = delta
 
-    def eval_data_loss(self, labels: ndarray, model_forward_run: list) -> tuple:
-        input_data = model_forward_run[-1].get(Name.OUTPUT)
+    def eval_data_loss(self, labels: ndarray, scores: ndarray) -> tuple:
         num_of_samples = labels.size
-        correct_class_scores = input_data[np.arange(num_of_samples), labels]
-        margins = np.maximum(0., input_data - correct_class_scores[:, np.newaxis] + self.delta)
+        correct_class_scores = scores[np.arange(num_of_samples), labels]
+        margins = np.maximum(0., scores - correct_class_scores[:, np.newaxis] + self.delta)
         margins[np.arange(num_of_samples), labels] = 0.
         data_loss = np.sum(margins) / num_of_samples
 
