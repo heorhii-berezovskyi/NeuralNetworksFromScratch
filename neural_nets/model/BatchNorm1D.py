@@ -5,6 +5,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeightsAndParams
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TestLayerVisitor, TrainLayerVisitor
+from neural_nets.optimizer.Optimizer import Optimizer
 
 
 class BatchNorm1DTest(TestModeLayerWithWeightsAndParams):
@@ -38,8 +39,9 @@ class BatchNorm1DTest(TestModeLayerWithWeightsAndParams):
 
 
 class BatchNorm1DTrain(TrainModeLayerWithWeights):
-    def __init__(self, weights: Cache, momentum: float):
+    def __init__(self, weights: Cache, momentum: float, optimizer: Optimizer):
         super().__init__()
+        self.optimizer = optimizer
         self.momentum = momentum
         self.weights = weights
 
@@ -83,19 +85,24 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
 
         layer_backward_run = Cache()
         layer_backward_run.add(name=Name.D_INPUT, value=dinput)
-        layer_backward_run.add(name=Name.D_GAMMA, value=dgamma)
-        layer_backward_run.add(name=Name.D_BETA, value=dbeta)
+        layer_backward_run.add(name=Name.GAMMA, value=dgamma)
+        layer_backward_run.add(name=Name.BETA, value=dbeta)
         return layer_backward_run
 
     def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeightsAndParams:
         return BatchNorm1DTest(layer_id=self.id, weights=self.weights, params=test_layer_params)
 
+    def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
+        new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
+        new_weights = new_optimizer.update_weights(self.weights)
+        return BatchNorm1DTrain(weights=new_weights, momentum=self.momentum, optimizer=new_optimizer)
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_batch_norm_train(self)
 
-    @classmethod
-    def init_weights(cls, input_dim: int, momentum: float):
+    @staticmethod
+    def init_weights(input_dim: int) -> Cache:
         weights = Cache()
-        weights.add(name=Name.GAMMA, value=np.ones(input_dim, dtype=np.float64))
-        weights.add(name=Name.BETA, value=np.zeros(input_dim, dtype=np.float64))
-        return cls(weights=weights, momentum=momentum)
+        weights.add(name=Name.GAMMA, value=np.ones(input_dim, dtype=float))
+        weights.add(name=Name.BETA, value=np.zeros(input_dim, dtype=float))
+        return weights

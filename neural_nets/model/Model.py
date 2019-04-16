@@ -1,11 +1,14 @@
 import numpy as np
 from numpy import ndarray
 
+from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
+from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
-from neural_nets.model.TrainModelInitVisitor import TrainModelInitVisitor
 from neural_nets.model.TestModelLoadVisitor import TestModelLoadVisitor
 from neural_nets.model.TestModelSaveVisitor import TestModelSaveVisitor
+from neural_nets.model.TrainModelInitVisitor import TrainModelInitVisitor
+from neural_nets.optimizer.Optimizer import WeightsUpdateVisitor
 
 
 class TestModel:
@@ -58,11 +61,8 @@ class TrainModel:
     Model representative working at train mode.
     """
 
-    def __init__(self):
-        self.layers = []
-
-    def get_layers(self) -> list:
-        return self.layers
+    def __init__(self, layers=[]):
+        self.layers = layers
 
     def add(self, layer: TrainModeLayer):
         """
@@ -96,6 +96,29 @@ class TrainModel:
             next_model_forward_run.append(new_layer_forward_run)
         scores = input_data
         return next_model_forward_run, scores
+
+    def backward(self, loss_function: Loss, model_forward_run: list, loss_run: Cache) -> list:
+        """
+        Performs backward pass of a train model based on the loss function, model forward run and loss function run.
+        :param loss_function: is a loss function.
+        :param model_forward_run: is a list of model forward run parameters.
+        :param loss_run: is an object storing loss function run parameters.
+        :return: model backward run.
+        """
+        dout = loss_function.eval_gradient(loss_run=loss_run)
+        model_backward_run = []
+        for layer, layer_forward_run in zip(reversed(self.layers), reversed(model_forward_run)):
+            layer_backward_run = layer.backward(dout, layer_forward_run)
+            dout = layer_backward_run.pop(Name.D_INPUT)
+            model_backward_run.append(layer_backward_run)
+        return model_backward_run
+
+    def optimize(self, model_backward_run: list):
+        model_backward_run.reverse()
+        visitor = WeightsUpdateVisitor(model_backward_run=model_backward_run)
+        for layer in reversed(self.layers):
+            layer.accept(visitor)
+        return TrainModel(visitor.get_result())
 
     def to_test(self, model_forward_run: list) -> TestModel:
         """

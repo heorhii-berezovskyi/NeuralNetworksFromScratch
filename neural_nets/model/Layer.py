@@ -4,7 +4,6 @@ from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Name import Name
-from neural_nets.optimizer.Optimizer import Optimizer
 
 NOT_IMPLEMENTED = "You should implement this."
 
@@ -120,3 +119,6 @@ class TrainModeLayerWithWeights(TrainModeLayer):
     def get_weights(self) -> Cache:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
+    @abstractmethod
+    def optimize(self, layer_backward_run: Cache):
+        raise NotImplementedError(NOT_IMPLEMENTED)

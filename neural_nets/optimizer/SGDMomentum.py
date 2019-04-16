@@ -1,94 +1,38 @@
 import numpy as np
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
-from neural_nets.model.Model import TrainModel
-from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
-class SGDMomentumVelocityInitVisitor(TrainLayerVisitor):
-    def __init__(self):
-        self.params = []
-
-    def visit_affine_train(self, layer: TrainModeLayerWithWeights):
-        layer_velocity = Cache()
-        weights = layer.get_weights()
-
-        layer_velocity.add(name=Name.V_WEIGHTS, value=np.zeros_like(weights.get(name=Name.WEIGHTS), dtype=np.float64))
-        layer_velocity.add(name=Name.V_BIASES, value=np.zeros_like(weights.get(name=Name.BIASES), dtype=np.float64))
-        self.params.append(layer_velocity)
-
-    def visit_weightless_train(self, layer: TrainModeLayer):
-        self.params.append(Cache())
-
-    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
-        layer_velocity = Cache()
-        weights = layer.get_weights()
-
-        layer_velocity.add(name=Name.V_GAMMA, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
-        layer_velocity.add(name=Name.V_BETA, value=np.zeros_like(weights.get(name=Name.BETA), dtype=np.float64))
-        self.params.append(layer_velocity)
-
-    def get_velocity_params(self) -> list:
-        return self.params
-
-
-class SGDMomentumWeightsUpdateVisitor(TrainLayerVisitor):
-    def __init__(self, learning_rate: np.float64, mu: float, model_backward_run: list, velocity_params: list):
-        self.mu = mu
-        self.lr = learning_rate
-        self.model_backward_run = model_backward_run
-        self.velocity_params = velocity_params
-
-    def visit_affine_train(self, layer: TrainModeLayerWithWeights):
-        weight_names = [Name.WEIGHTS, Name.BIASES]
-        grad_names = [Name.D_WEIGHTS, Name.D_BIASES]
-        v_names = [Name.V_WEIGHTS, Name.V_BIASES]
-        self._update(weight_names=weight_names, grad_names=grad_names, v_names=v_names, layer=layer)
-
-    def visit_weightless_train(self, layer: TrainModeLayer):
-        self.model_backward_run.pop()
-
-    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
-        weight_names = [Name.GAMMA, Name.BETA]
-        grad_names = [Name.D_GAMMA, Name.D_BETA]
-        v_names = [Name.V_GAMMA, Name.V_BETA]
-        self._update(weight_names=weight_names, grad_names=grad_names, v_names=v_names, layer=layer)
-
-    def _update(self, weight_names: list, grad_names: list, v_names: list, layer: TrainModeLayerWithWeights):
-        layer_id = layer.get_id()
-        layer_backward_run = self.model_backward_run.pop()
-        layer_weights = layer.get_weights()
-        for wight_name, grad_name, velocity_name in zip(weight_names, grad_names, v_names):
-            learning_param = layer_weights.get(name=wight_name)
-            param_grad = layer_backward_run.get(grad_name)
-            param_v = self.velocity_params[layer_id].get(velocity_name)
-            param_v = self.mu * param_v - self.lr * param_grad
-            self.velocity_params[layer_id].update(velocity_name, param_v)
-            learning_param += param_v
-            layer.get_weights().update(name=wight_name, value=learning_param)
-
-
 class SGDMomentum(Optimizer):
-    def __init__(self, model: TrainModel, learning_rate: np.float64, mu: np.float64):
-        super().__init__(model=model)
-        self.lr = learning_rate
-        self.mu = mu
-        self.velocity_params = self.init_velocity_params()
+    learning_rate = 0.001
+    mu = 0.9
 
-    def init_velocity_params(self) -> list:
-        visitor = SGDMomentumVelocityInitVisitor()
-        for layer in self.model.get_layers():
-            layer.accept(visitor)
-        return visitor.get_velocity_params()
+    def __init__(self, velocity: Cache):
+        self.velocity = velocity
 
-    def step(self, model_backward_run: list):
-        model_backward_run.reverse()
-        visitor = SGDMomentumWeightsUpdateVisitor(learning_rate=self.lr,
-                                                  mu=self.mu,
-                                                  model_backward_run=model_backward_run,
-                                                  velocity_params=self.velocity_params)
-        for layer in reversed(self.model.get_layers()):
-            layer.accept(visitor)
+    @classmethod
+    def init_memory(cls, weights: Cache):
+        velocity = Cache()
+        for name in weights.get_keys():
+            w = weights.get(name=name)
+            velocity.add(name=name, value=np.zeros_like(w))
+        return cls(velocity=velocity)
+
+    def update_memory(self, layer_backward_run: Cache):
+        updated_velocity = Cache()
+        for name in self.velocity.get_keys():
+            dw = layer_backward_run.get(name=name)
+
+            velocity = self.velocity.get(name=name) * SGDMomentum.mu - SGDMomentum.learning_rate * dw
+            updated_velocity.add(name=name, value=velocity)
+        return SGDMomentum(velocity=updated_velocity)
+
+    def update_weights(self, weights: Cache) -> Cache:
+        updated_weights = Cache()
+        for name in self.velocity.get_keys():
+            velocity = self.velocity.get(name=name)
+            w = weights.get(name=name)
+            w += velocity
+            updated_weights.add(name=name, value=w)
+        return updated_weights

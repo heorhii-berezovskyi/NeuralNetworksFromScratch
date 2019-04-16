@@ -5,6 +5,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
+from neural_nets.optimizer.Optimizer import Optimizer
 
 
 class LinearTest(TestModeLayerWithWeights):
@@ -31,8 +32,9 @@ class LinearTest(TestModeLayerWithWeights):
 
 
 class LinearTrain(TrainModeLayerWithWeights):
-    def __init__(self, weights: Cache):
+    def __init__(self, weights: Cache, optimizer: Optimizer):
         super().__init__()
+        self.optimizer = optimizer
         self.weights = weights
 
     def get_id(self) -> int:
@@ -63,19 +65,24 @@ class LinearTrain(TrainModeLayerWithWeights):
 
         layer_backward_run = Cache()
         layer_backward_run.add(name=Name.D_INPUT, value=dinput)
-        layer_backward_run.add(name=Name.D_WEIGHTS, value=dweights)
-        layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
+        layer_backward_run.add(name=Name.WEIGHTS, value=dweights)
+        layer_backward_run.add(name=Name.BIASES, value=dbiases)
         return layer_backward_run
 
     def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
         return LinearTest(layer_id=self.id, weights=self.weights)
 
+    def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
+        new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
+        new_weights = new_optimizer.update_weights(self.weights)
+        return LinearTrain(weights=new_weights, optimizer=new_optimizer)
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)
 
-    @classmethod
-    def init_weights(cls, input_dim: int, num_of_neurons: int):
+    @staticmethod
+    def init_weights(input_dim: int, num_of_neurons: int):
         weights = Cache()
         weights.add(name=Name.WEIGHTS, value=np.random.rand(input_dim, num_of_neurons) * np.sqrt(2. / input_dim))
-        weights.add(name=Name.BIASES, value=np.zeros(num_of_neurons, dtype=np.float64))
-        return cls(weights)
+        weights.add(name=Name.BIASES, value=np.zeros(num_of_neurons, dtype=float))
+        return weights

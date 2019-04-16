@@ -5,6 +5,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
+from neural_nets.optimizer.Optimizer import Optimizer
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
@@ -60,9 +61,9 @@ class Conv2DTest(TestModeLayerWithWeights):
 
 
 class Conv2DTrain(TrainModeLayerWithWeights):
-    def __init__(self, weights: Cache, stride: int,
-                 padding: int):
+    def __init__(self, weights: Cache, stride: int, padding: int, optimizer: Optimizer):
         super().__init__()
+        self.optimizer = optimizer
         self.stride = stride
         self.padding = padding
         self.weights = weights
@@ -136,8 +137,8 @@ class Conv2DTrain(TrainModeLayerWithWeights):
 
         layer_backward_run = Cache()
         layer_backward_run.add(name=Name.D_INPUT, value=dinput)
-        layer_backward_run.add(name=Name.D_BIASES, value=dbiases)
-        layer_backward_run.add(name=Name.D_WEIGHTS, value=dweights)
+        layer_backward_run.add(name=Name.WEIGHTS, value=dweights)
+        layer_backward_run.add(name=Name.BIASES, value=dbiases)
         return layer_backward_run
 
     def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
@@ -146,15 +147,22 @@ class Conv2DTrain(TrainModeLayerWithWeights):
                           padding=self.padding,
                           stride=self.stride)
 
+    def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
+        new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
+        new_weights = new_optimizer.update_weights(self.weights)
+        return Conv2DTrain(weights=new_weights,
+                           stride=self.stride,
+                           padding=self.padding,
+                           optimizer=new_optimizer)
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)
 
-    @classmethod
-    def init_weights(cls, num_filters: int, filter_depth: int, filter_height: int, filter_width: int, stride: int,
-                     padding: int):
+    @staticmethod
+    def init_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int) -> Cache:
         weights = Cache()
         weights.add(name=Name.WEIGHTS,
                     value=np.random.rand(num_filters, filter_depth, filter_height, filter_width) * np.sqrt(
                         2. / (filter_depth * filter_height * filter_width)))
-        weights.add(name=Name.BIASES, value=np.zeros(num_filters, dtype=np.float64))
-        return cls(weights=weights, stride=stride, padding=padding)
+        weights.add(name=Name.BIASES, value=np.zeros(num_filters, dtype=float))
+        return weights

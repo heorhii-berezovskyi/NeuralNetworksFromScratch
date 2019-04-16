@@ -46,15 +46,10 @@ class Name(Enum):
 
     D_INPUT = 'gradient of a layer by its input'
 
-    # Gradients of a linear layer.
-    D_WEIGHTS = 'linear weights gradient'
-    D_BIASES = 'linear biases gradient'
-
-    # Gradients of a Batch Norm Layer.
-    D_GAMMA = 'gamma gradient'
-    D_BETA = 'beta gradient'
-
     # Velocity.
+    VEL = 'velocity'
+    VEL_PREV = 'previous velocity'
+
     V_WEIGHTS = 'weights velocity'
     V_WEIGHTS_PREV = 'previous weights velocity'
 

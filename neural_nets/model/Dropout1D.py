@@ -52,7 +52,7 @@ class Dropout1DTrain(TrainModeLayer):
         layer_backward_run.add(name=Name.D_INPUT, value=dinput)
         return layer_backward_run
 
-    def to_test(self, test_layer_params: Cache) -> TestModeLayer:
+    def to_test(self, layer_forward_run: Cache) -> TestModeLayer:
         return Dropout1DTest(layer_id=self.id)
 
     def accept(self, visitor: TrainLayerVisitor):
