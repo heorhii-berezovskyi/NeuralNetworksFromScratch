@@ -27,7 +27,7 @@ class SVMLoss(Loss):
         margins = loss_run.get(name=Name.MARGINS)
         num_of_samples = labels.size
         num_pos = np.sum(margins > 0., axis=1)
-        dinput = np.zeros_like(margins, dtype=np.float64)
+        dinput = np.zeros_like(margins, dtype=float)
         dinput[margins > 0.] = 1.
         dinput[np.arange(num_of_samples), labels] -= num_pos
         dinput /= num_of_samples

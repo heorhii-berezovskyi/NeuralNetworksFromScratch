@@ -11,8 +11,8 @@ from neural_nets.optimizer.Optimizer import Optimizer
 class LinearTest(TestModeLayerWithWeights):
     name = Name.LINEAR_TEST
 
-    def __init__(self, layer_id: int, weights: Cache):
-        self.id = layer_id
+    def __init__(self, block_name: str, weights: Cache):
+        super().__init__(block_name=block_name)
         self.weights = weights
 
     def forward(self, input_data: ndarray) -> ndarray:
@@ -21,7 +21,7 @@ class LinearTest(TestModeLayerWithWeights):
         return output_data
 
     def content(self) -> dict:
-        layer_id = LinearTest.name.value + str(self.id)
+        layer_id = self.block_name + LinearTest.name.value
         result = {}
         for item_name in self.weights.get_keys():
             data_value = self.weights.get(name=item_name)
@@ -31,13 +31,12 @@ class LinearTest(TestModeLayerWithWeights):
 
     def from_params(self, all_params):
         weights = Cache()
-
-        layer_id = LinearTest.name.value + str(self.id)
+        layer_id = self.block_name + LinearTest.name.value
         for w_name in [Name.WEIGHTS, Name.BIASES]:
             w_key = layer_id + w_name.value
             w_value = all_params[w_key]
             weights.add(name=w_name, value=w_value)
-        return LinearTest(layer_id=self.id, weights=weights)
+        return LinearTest(block_name=self.block_name, weights=weights)
 
     def accept(self, visitor: TestLayerVisitor):
         visitor.visit_weighted_test(self)
@@ -46,8 +45,8 @@ class LinearTest(TestModeLayerWithWeights):
 class LinearTrain(TrainModeLayerWithWeights):
     name = Name.LINEAR_TRAIN
 
-    def __init__(self, layer_id: int, weights: Cache, optimizer: Optimizer):
-        self.id = layer_id
+    def __init__(self, block_name: str, weights: Cache, optimizer: Optimizer):
+        super().__init__(block_name=block_name)
         self.optimizer = optimizer
         self.weights = weights
 
@@ -75,12 +74,12 @@ class LinearTrain(TrainModeLayerWithWeights):
         return layer_backward_run
 
     def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
-        return LinearTest(layer_id=self.id, weights=self.weights)
+        return LinearTest(block_name=self.block_name, weights=self.weights)
 
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return LinearTrain(layer_id=self.id,
+        return LinearTrain(block_name=self.block_name,
                            weights=new_weights,
                            optimizer=new_optimizer)
 

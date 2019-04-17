@@ -3,7 +3,6 @@ from abc import ABCMeta, abstractmethod
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Name import Name
 
 NOT_IMPLEMENTED = "You should implement this."
 
@@ -30,6 +29,9 @@ class TestModeLayer:
 
 class TestModeLayerWithWeights(TestModeLayer):
     __metaclass__ = ABCMeta
+
+    def __init__(self, block_name: str):
+        self.block_name = block_name
 
     @abstractmethod
     def content(self) -> dict:
@@ -85,6 +87,9 @@ class TrainModeLayerWithWeights(TrainModeLayer):
     Representative of a trainable layer with weights.
     """
     __metaclass__ = ABCMeta
+
+    def __init__(self, block_name: str):
+        self.block_name = block_name
 
     @abstractmethod
     def optimize(self, layer_backward_run: Cache):

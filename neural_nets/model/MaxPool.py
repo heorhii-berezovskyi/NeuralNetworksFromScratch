@@ -11,8 +11,7 @@ from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indi
 class MaxPoolTest(TestModeLayer):
     name = Name.MAX_POOL_TEST
 
-    def __init__(self, layer_id: int, pool_height: int, pool_width: int, stride: int):
-        self.id = layer_id
+    def __init__(self, pool_height: int, pool_width: int, stride: int):
         self.pool_height = pool_height
         self.pool_width = pool_width
         self.stride = stride
@@ -40,8 +39,7 @@ class MaxPoolTest(TestModeLayer):
 class MaxPoolTrain(TrainModeLayer):
     name = Name.MAX_POOL_TRAIN
 
-    def __init__(self, layer_id: int, pool_height: int, pool_width: int, stride: int):
-        self.id = layer_id
+    def __init__(self, pool_height: int, pool_width: int, stride: int):
         self.pool_height = pool_height
         self.pool_width = pool_width
         self.stride = stride
@@ -87,8 +85,7 @@ class MaxPoolTrain(TrainModeLayer):
         return layer_backward_run
 
     def to_test(self, test_layer_params: Cache) -> TestModeLayer:
-        return MaxPoolTest(layer_id=self.id,
-                           pool_height=self.pool_height,
+        return MaxPoolTest(pool_height=self.pool_height,
                            pool_width=self.pool_width,
                            stride=self.stride)
 

@@ -12,8 +12,8 @@ from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indi
 class Conv2DTest(TestModeLayerWithWeights):
     name = Name.CONV2D_TEST
 
-    def __init__(self, layer_id: int, weights: Cache, stride: int, padding: int):
-        self.id = layer_id
+    def __init__(self, block_name: str, weights: Cache, stride: int, padding: int):
+        super().__init__(block_name=block_name)
         self.weights = weights
         self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
         self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
@@ -50,7 +50,7 @@ class Conv2DTest(TestModeLayerWithWeights):
         return output_data
 
     def content(self) -> dict:
-        layer_id = Conv2DTest.name.value + str(self.id)
+        layer_id = self.block_name + Conv2DTest.name.value
         result = {}
         for item_name in self.weights.get_keys():
             data_value = self.weights.get(name=item_name)
@@ -61,12 +61,12 @@ class Conv2DTest(TestModeLayerWithWeights):
     def from_params(self, all_params):
         weights = Cache()
 
-        layer_id = Conv2DTest.name.value + str(self.id)
+        layer_id = self.block_name + Conv2DTest.name.value
         for w_name in [Name.WEIGHTS, Name.BIASES]:
             w_key = layer_id + w_name.value
             w_value = all_params[w_key]
             weights.add(name=w_name, value=w_value)
-        return Conv2DTest(layer_id=self.id, weights=weights, stride=self.stride, padding=self.padding)
+        return Conv2DTest(block_name=self.block_name, weights=weights, stride=self.stride, padding=self.padding)
 
     def accept(self, visitor: TestLayerVisitor):
         visitor.visit_weighted_test(self)
@@ -75,8 +75,8 @@ class Conv2DTest(TestModeLayerWithWeights):
 class Conv2DTrain(TrainModeLayerWithWeights):
     name = Name.CONV2D_TRAIN
 
-    def __init__(self, layer_id: int, weights: Cache, stride: int, padding: int, optimizer: Optimizer):
-        self.id = layer_id
+    def __init__(self, block_name: str, weights: Cache, stride: int, padding: int, optimizer: Optimizer):
+        super().__init__(block_name=block_name)
         self.optimizer = optimizer
         self.stride = stride
         self.padding = padding
@@ -147,7 +147,7 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         return layer_backward_run
 
     def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
-        return Conv2DTest(layer_id=self.id,
+        return Conv2DTest(block_name=self.block_name,
                           weights=self.weights,
                           padding=self.padding,
                           stride=self.stride)
@@ -155,7 +155,7 @@ class Conv2DTrain(TrainModeLayerWithWeights):
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return Conv2DTrain(layer_id=self.id,
+        return Conv2DTrain(block_name=self.block_name,
                            weights=new_weights,
                            stride=self.stride,
                            padding=self.padding,
