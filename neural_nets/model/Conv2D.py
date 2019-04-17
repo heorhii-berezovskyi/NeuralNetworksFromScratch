@@ -10,6 +10,8 @@ from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indi
 
 
 class Conv2DTest(TestModeLayerWithWeights):
+    name = Name.CONV2D_TEST
+
     def __init__(self, layer_id: int, weights: Cache, stride: int, padding: int):
         self.id = layer_id
         self.weights = weights
@@ -18,15 +20,6 @@ class Conv2DTest(TestModeLayerWithWeights):
         self.filter_width = weights.get(name=Name.WEIGHTS).shape[3]
         self.stride = stride
         self.padding = padding
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.CONV2D_TEST
-
-    def get_weights(self) -> Cache:
-        return self.weights
 
     def forward(self, input_data: ndarray) -> ndarray:
         """
@@ -56,13 +49,34 @@ class Conv2DTest(TestModeLayerWithWeights):
         output_data = output_data.transpose(3, 0, 1, 2)
         return output_data
 
+    def content(self) -> dict:
+        layer_id = Conv2DTest.name.value + str(self.id)
+        result = {}
+        for item_name in self.weights.get_keys():
+            data_value = self.weights.get(name=item_name)
+            data_key = layer_id + item_name.value
+            result[data_key] = data_value
+        return result
+
+    def from_params(self, all_params):
+        weights = Cache()
+
+        layer_id = Conv2DTest.name.value + str(self.id)
+        for w_name in [Name.WEIGHTS, Name.BIASES]:
+            w_key = layer_id + w_name.value
+            w_value = all_params[w_key]
+            weights.add(name=w_name, value=w_value)
+        return Conv2DTest(layer_id=self.id, weights=weights, stride=self.stride, padding=self.padding)
+
     def accept(self, visitor: TestLayerVisitor):
-        visitor.visit_affine_test(self)
+        visitor.visit_weighted_test(self)
 
 
 class Conv2DTrain(TrainModeLayerWithWeights):
-    def __init__(self, weights: Cache, stride: int, padding: int, optimizer: Optimizer):
-        super().__init__()
+    name = Name.CONV2D_TRAIN
+
+    def __init__(self, layer_id: int, weights: Cache, stride: int, padding: int, optimizer: Optimizer):
+        self.id = layer_id
         self.optimizer = optimizer
         self.stride = stride
         self.padding = padding
@@ -70,15 +84,6 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
         self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
         self.filter_width = weights.get(name=Name.WEIGHTS).shape[3]
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.CONV2D_TRAIN
-
-    def get_weights(self) -> Cache:
-        return self.weights
 
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         """
@@ -150,7 +155,8 @@ class Conv2DTrain(TrainModeLayerWithWeights):
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return Conv2DTrain(weights=new_weights,
+        return Conv2DTrain(layer_id=self.id,
+                           weights=new_weights,
                            stride=self.stride,
                            padding=self.padding,
                            optimizer=new_optimizer)

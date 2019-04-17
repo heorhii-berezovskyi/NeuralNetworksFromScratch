@@ -40,7 +40,12 @@ class WeightsUpdateVisitor(TrainLayerVisitor):
         self.model_backward_run.pop()
         self.result.append(layer)
 
-    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
+    def visit_batch_norm_1d_train(self, layer):
+        layer_backward_run = self.model_backward_run.pop()
+        new_layer = layer.optimize(layer_backward_run=layer_backward_run)
+        self.result.append(new_layer)
+
+    def visit_batch_norm_2d_train(self, layer):
         layer_backward_run = self.model_backward_run.pop()
         new_layer = layer.optimize(layer_backward_run=layer_backward_run)
         self.result.append(new_layer)

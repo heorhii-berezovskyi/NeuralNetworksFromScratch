@@ -15,14 +15,6 @@ class TestModeLayer:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_id(self) -> int:
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-    @abstractmethod
-    def get_name(self) -> Name:
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-    @abstractmethod
     def forward(self, input_data: ndarray) -> ndarray:
         """
         Performs a forward pass of a layer based on the input data.
@@ -40,15 +32,11 @@ class TestModeLayerWithWeights(TestModeLayer):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_weights(self) -> Cache:
+    def content(self) -> dict:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
-
-class TestModeLayerWithWeightsAndParams(TestModeLayerWithWeights):
-    __metaclass__ = ABCMeta
-
     @abstractmethod
-    def get_params(self) -> Cache:
+    def from_params(self, all_params):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 
@@ -57,20 +45,6 @@ class TrainModeLayer:
     Representative of a trainable layer.
     """
     __metaclass__ = ABCMeta
-
-    next_id = 0
-
-    def __init__(self):
-        self.id = TrainModeLayer.next_id
-        TrainModeLayer.next_id += 1
-
-    @abstractmethod
-    def get_id(self) -> int:
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-    @abstractmethod
-    def get_name(self) -> Name:
-        raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
@@ -111,13 +85,6 @@ class TrainModeLayerWithWeights(TrainModeLayer):
     Representative of a trainable layer with weights.
     """
     __metaclass__ = ABCMeta
-
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def get_weights(self) -> Cache:
-        raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
     def optimize(self, layer_backward_run: Cache):

@@ -1,8 +1,7 @@
-import numpy as np
-
+from neural_nets.model.BatchNorm1D import BatchNorm1DTrain
+from neural_nets.model.BatchNorm2D import BatchNorm2DTrain
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TrainModeLayerWithWeights
-from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor
 
 
@@ -20,13 +19,11 @@ class TrainModelInitVisitor(TrainLayerVisitor):
     def visit_weightless_train(self, layer: TrainModeLayer):
         self.result.append(Cache())
 
-    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
-        weights = layer.get_weights()
+    def visit_batch_norm_1d_train(self, layer: BatchNorm1DTrain):
+        self.result.append(layer.init_params())
 
-        params = Cache()
-        params.add(name=Name.RUNNING_MEAN, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
-        params.add(name=Name.RUNNING_VAR, value=np.zeros_like(weights.get(name=Name.GAMMA), dtype=np.float64))
-        self.result.append(params)
+    def visit_batch_norm_2d_train(self, layer: BatchNorm2DTrain):
+        self.result.append(layer.init_params())
 
     def get_result(self) -> list:
         return self.result

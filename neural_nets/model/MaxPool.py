@@ -9,17 +9,13 @@ from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indi
 
 
 class MaxPoolTest(TestModeLayer):
+    name = Name.MAX_POOL_TEST
+
     def __init__(self, layer_id: int, pool_height: int, pool_width: int, stride: int):
         self.id = layer_id
         self.pool_height = pool_height
         self.pool_width = pool_width
         self.stride = stride
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.MAX_POOL_TEST
 
     def forward(self, input_data: ndarray) -> ndarray:
         N, C, H, W = input_data.shape
@@ -42,17 +38,13 @@ class MaxPoolTest(TestModeLayer):
 
 
 class MaxPoolTrain(TrainModeLayer):
-    def __init__(self, pool_height: int, pool_width: int, stride: int):
-        super().__init__()
+    name = Name.MAX_POOL_TRAIN
+
+    def __init__(self, layer_id: int, pool_height: int, pool_width: int, stride: int):
+        self.id = layer_id
         self.pool_height = pool_height
         self.pool_width = pool_width
         self.stride = stride
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.MAX_POOL_TRAIN
 
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         N, C, H, W = input_data.shape

@@ -16,7 +16,11 @@ class TrainLayerVisitor:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def visit_batch_norm_train(self, layer: TrainModeLayerWithWeights):
+    def visit_batch_norm_1d_train(self, layer):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def visit_batch_norm_2d_train(self, layer):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
@@ -31,11 +35,7 @@ class TestLayerVisitor:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def visit_affine_test(self, layer: TestModeLayerWithWeights):
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-    @abstractmethod
-    def visit_batch_norm_test(self, layer: TestModeLayerWithWeights):
+    def visit_weighted_test(self, layer: TestModeLayerWithWeights):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod

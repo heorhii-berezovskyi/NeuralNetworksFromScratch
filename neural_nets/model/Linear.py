@@ -9,42 +9,47 @@ from neural_nets.optimizer.Optimizer import Optimizer
 
 
 class LinearTest(TestModeLayerWithWeights):
+    name = Name.LINEAR_TEST
+
     def __init__(self, layer_id: int, weights: Cache):
         self.id = layer_id
         self.weights = weights
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.LINEAR_TEST
 
     def forward(self, input_data: ndarray) -> ndarray:
         weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
         output_data = input_data.reshape(input_data.shape[0], -1) @ weights + biases
         return output_data
 
-    def get_weights(self) -> Cache:
-        return self.weights
+    def content(self) -> dict:
+        layer_id = LinearTest.name.value + str(self.id)
+        result = {}
+        for item_name in self.weights.get_keys():
+            data_value = self.weights.get(name=item_name)
+            data_key = layer_id + item_name.value
+            result[data_key] = data_value
+        return result
+
+    def from_params(self, all_params):
+        weights = Cache()
+
+        layer_id = LinearTest.name.value + str(self.id)
+        for w_name in [Name.WEIGHTS, Name.BIASES]:
+            w_key = layer_id + w_name.value
+            w_value = all_params[w_key]
+            weights.add(name=w_name, value=w_value)
+        return LinearTest(layer_id=self.id, weights=weights)
 
     def accept(self, visitor: TestLayerVisitor):
-        visitor.visit_affine_test(self)
+        visitor.visit_weighted_test(self)
 
 
 class LinearTrain(TrainModeLayerWithWeights):
-    def __init__(self, weights: Cache, optimizer: Optimizer):
-        super().__init__()
+    name = Name.LINEAR_TRAIN
+
+    def __init__(self, layer_id: int, weights: Cache, optimizer: Optimizer):
+        self.id = layer_id
         self.optimizer = optimizer
         self.weights = weights
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.LINEAR_TRAIN
-
-    def get_weights(self) -> Cache:
-        return self.weights
 
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         weights, biases = self.weights.get(name=Name.WEIGHTS), self.weights.get(name=Name.BIASES)
@@ -75,7 +80,9 @@ class LinearTrain(TrainModeLayerWithWeights):
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return LinearTrain(weights=new_weights, optimizer=new_optimizer)
+        return LinearTrain(layer_id=self.id,
+                           weights=new_weights,
+                           optimizer=new_optimizer)
 
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)

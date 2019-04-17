@@ -8,14 +8,10 @@ from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
 
 
 class ReluTest(TestModeLayer):
+    name = Name.RELU_TEST
+
     def __init__(self, layer_id: int):
         self.id = layer_id
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.RELU_TEST
 
     def forward(self, input_data: ndarray) -> ndarray:
         output = np.maximum(0., input_data)
@@ -26,14 +22,10 @@ class ReluTest(TestModeLayer):
 
 
 class ReluTrain(TrainModeLayer):
-    def __init__(self):
-        super().__init__()
+    name = Name.RELU_TRAIN
 
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.RELU_TRAIN
+    def __init__(self, layer_id: int):
+        self.id = layer_id
 
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         output_data = np.maximum(0.0, input_data)

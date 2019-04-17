@@ -49,34 +49,3 @@ class Name(Enum):
     # Velocity.
     VEL = 'velocity'
     VEL_PREV = 'previous velocity'
-
-    V_WEIGHTS = 'weights velocity'
-    V_WEIGHTS_PREV = 'previous weights velocity'
-
-    V_BIASES = 'biases velocity'
-    V_BIASES_PREV = 'previous biases velocity'
-
-    V_GAMMA = 'gamma velocity'
-    V_GAMMA_PREV = 'previous gamma velocity'
-
-    V_BETA = 'beta velocity'
-    V_BETA_PREV = 'previous beta velocity'
-
-    # Cache names for adaptive learning rate methods.
-    D_WEIGHTS_CACHE = 'cache for weights gradients'
-    D_BIASES_CACHE = 'cache for biases gradients'
-
-    D_GAMMA_CACHE = 'cache for gamma gradients'
-    D_BETA_CACHE = 'cache for beta gradients'
-
-    ADAM_M_WEIGHTS = 'm cache for weights'
-    ADAM_V_WEIGHTS = 'v cache for weights'
-
-    ADAM_M_BIASES = 'm cache for biases'
-    ADAM_V_BIASES = 'v cache for biases'
-
-    ADAM_M_GAMMA = 'm cache for gamma'
-    ADAM_V_GAMMA = 'v cache for gamma'
-
-    ADAM_M_BETA = 'm cache for beta'
-    ADAM_V_BETA = 'v cache for beta'

@@ -2,7 +2,6 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
 from neural_nets.model.TestModelLoadVisitor import TestModelLoadVisitor
@@ -16,15 +15,8 @@ class TestModel:
     Model representative working at test mode.
     """
 
-    def __init__(self):
-        self.layers = []
-
-    def add(self, layer: TestModeLayer):
-        """
-        Adds test mode layer to the model.
-        :param layer: is a test mode layer representative.
-        """
-        self.layers.append(layer)
+    def __init__(self, layers: list):
+        self.layers = layers
 
     def test(self, labels: ndarray, images: ndarray):
         """
@@ -54,6 +46,7 @@ class TestModel:
         for layer in self.layers:
             layer.accept(visitor)
         all_params.close()
+        return TestModel(layers=visitor.get_result())
 
 
 class TrainModel:
@@ -61,15 +54,8 @@ class TrainModel:
     Model representative working at train mode.
     """
 
-    def __init__(self, layers=[]):
+    def __init__(self, layers: list):
         self.layers = layers
-
-    def add(self, layer: TrainModeLayer):
-        """
-        Adds train mode layer to the model.
-        :param layer: is a train mode layer.
-        """
-        self.layers.append(layer)
 
     def init_model(self) -> list:
         """
@@ -127,8 +113,8 @@ class TrainModel:
                forward pass of a train model.
         :return: a built test model.
         """
-        test_model = TestModel()
+        test_layers = []
         for train_layer, layer_forward_run in zip(self.layers, model_forward_run):
             test_layer = train_layer.to_test(layer_forward_run)
-            test_model.add(test_layer)
-        return test_model
+            test_layers.append(test_layer)
+        return TestModel(layers=test_layers)

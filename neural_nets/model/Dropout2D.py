@@ -8,14 +8,10 @@ from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
 
 
 class Dropout2DTest(TestModeLayer):
+    name = Name.DROPOUT2D_TEST
+
     def __init__(self, layer_id: int):
         self.id = layer_id
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.DROPOUT2D_TEST
 
     def forward(self, input_data: ndarray) -> ndarray:
         output_data = input_data
@@ -26,15 +22,11 @@ class Dropout2DTest(TestModeLayer):
 
 
 class Dropout2DTrain(TrainModeLayer):
-    def __init__(self, keep_active_prob: float):
-        super().__init__()
+    name = Name.DROPOUT2D_TRAIN
+
+    def __init__(self, layer_id: int, keep_active_prob: float):
+        self.id = layer_id
         self.p = keep_active_prob
-
-    def get_id(self) -> int:
-        return self.id
-
-    def get_name(self) -> Name:
-        return Name.DROPOUT2D_TRAIN
 
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         N, C = input_data.shape[0], input_data.shape[1]
