@@ -4,12 +4,11 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TestLayerVisitor, TrainLayerVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
 class MaxPoolTest(TestModeLayer):
-    name = Name.MAX_POOL_TEST
 
     def __init__(self, pool_height: int, pool_width: int, stride: int):
         self.pool_height = pool_height
@@ -31,9 +30,6 @@ class MaxPoolTest(TestModeLayer):
         x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
         out = x_cols_max.reshape(out_h, out_w, N, C).transpose(2, 3, 0, 1)
         return out
-
-    def accept(self, visitor: TestLayerVisitor):
-        visitor.visit_weightless_test(self)
 
 
 class MaxPoolTrain(TrainModeLayer):
@@ -84,7 +80,7 @@ class MaxPoolTrain(TrainModeLayer):
         layer_backward_run.add(name=Name.D_INPUT, value=dinput)
         return layer_backward_run
 
-    def to_test(self, test_layer_params: Cache) -> TestModeLayer:
+    def to_test(self, layer_forward_run: Cache) -> TestModeLayer:
         return MaxPoolTest(pool_height=self.pool_height,
                            pool_width=self.pool_width,
                            stride=self.stride)

@@ -48,4 +48,16 @@ class Name(Enum):
 
     # Velocity.
     VEL = 'velocity'
-    VEL_PREV = 'previous velocity'
+    VEL_PREV = 'previous_velocity'
+
+    FIRST_MOM = 'first_moment'
+    SECOND_MOM = 'second_moment'
+
+    NUM_ITER = 'iteration_number'
+
+    # Optimizer name.
+    ADAGRAD = 'Adagrad'
+    ADAM = 'Adam'
+    RMSPROP = 'RMSprop'
+    SGD_MOMENTUM = 'SGDMomentum'
+    SGD_NESTEROV_MOMENTUM = 'SGDNesterovMomentum'

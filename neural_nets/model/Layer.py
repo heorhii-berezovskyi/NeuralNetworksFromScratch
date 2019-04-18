@@ -22,25 +22,6 @@ class TestModeLayer:
         """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
-    @abstractmethod
-    def accept(self, visitor):
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-
-class TestModeLayerWithWeights(TestModeLayer):
-    __metaclass__ = ABCMeta
-
-    def __init__(self, block_name: str):
-        self.block_name = block_name
-
-    @abstractmethod
-    def content(self) -> dict:
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
-    @abstractmethod
-    def from_params(self, all_params):
-        raise NotImplementedError(NOT_IMPLEMENTED)
-
 
 class TrainModeLayer:
     """
@@ -69,10 +50,10 @@ class TrainModeLayer:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
-    def to_test(self, test_layer_params: Cache) -> TestModeLayer:
+    def to_test(self, layer_forward_run: Cache) -> TestModeLayer:
         """
         Creates a test mode layer representative based on it's weights and test model parameters.
-        :param test_layer_params: is a Cache of a parameters, required to build a test model layers.
+        :param layer_forward_run: is a Cache of a parameters, required to build a test model layers.
         :return: a test mode layer object.
         """
         raise NotImplementedError(NOT_IMPLEMENTED)
@@ -93,4 +74,12 @@ class TrainModeLayerWithWeights(TrainModeLayer):
 
     @abstractmethod
     def optimize(self, layer_backward_run: Cache):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def content(self, layer_forward_run: Cache) -> dict:
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def from_params(self, all_params) -> tuple:
         raise NotImplementedError(NOT_IMPLEMENTED)

@@ -21,12 +21,6 @@ class Cache:
         else:
             raise ParamNotFoundException(name.value + ' not found in params.')
 
-    def update(self, name: Name, value: ndarray):
-        if name in self.params:
-            self.params[name] = value
-        else:
-            raise ParamNotFoundException(name.value + ' not found in params. Unable to update.')
-
     def pop(self, name: Name) -> ndarray:
         if name in self.params:
             return self.params.pop(name)

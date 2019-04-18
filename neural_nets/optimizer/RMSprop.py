@@ -1,26 +1,31 @@
 import numpy as np
 
 from neural_nets.model.Cache import Cache
+from neural_nets.model.Name import Name
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
 class RMSprop(Optimizer):
+    name = Name.RMSPROP
     decay_rate = 0.99
     learning_rate = 0.001
 
-    def __init__(self, cache: Cache, update_values: Cache):
+    def __init__(self, layer_id: str, cache: Cache, update_values: Cache):
+        self.id = layer_id
         self.cache = cache
         self.update_values = update_values
 
     @classmethod
-    def init_memory(cls, weights: Cache):
+    def init_memory(cls, layer_id: str, weights: Cache):
         cache = Cache()
         update_values = Cache()
         for name in weights.get_keys():
             w = weights.get(name=name)
             cache.add(name=name, value=np.zeros_like(w))
             update_values.add(name=name, value=np.zeros_like(w))
-        return cls(cache=cache, update_values=update_values)
+        return cls(layer_id=layer_id,
+                   cache=cache,
+                   update_values=update_values)
 
     def update_memory(self, layer_backward_run: Cache):
         updated_cache = Cache()
@@ -33,13 +38,33 @@ class RMSprop(Optimizer):
 
             value = -RMSprop.learning_rate * dw / (np.sqrt(cache) + 1e-6)
             updated_values.add(name=name, value=value)
-        return RMSprop(cache=updated_cache, update_values=updated_values)
+        return RMSprop(layer_id=self.id,
+                       cache=updated_cache,
+                       update_values=updated_values)
 
     def update_weights(self, weights: Cache) -> Cache:
         updated_weights = Cache()
         for name in self.cache.get_keys():
-            update_values = self.update_values.get(name=name)
             w = weights.get(name=name)
-            w += update_values
+            w += self.update_values.get(name=name)
             updated_weights.add(name=name, value=w)
         return updated_weights
+
+    def memory_content(self) -> dict:
+        result = {}
+        optimizer_id = self.id + RMSprop.name.value
+        for name in self.cache.get_keys():
+            cache_item_key = optimizer_id + name.value
+            result[cache_item_key] = self.cache.get(name=name)
+        return result
+
+    def from_params(self, all_params):
+        optimizer_id = self.id + RMSprop.name.value
+
+        cache = Cache()
+        for name in self.cache.get_keys():
+            cache_item_key = optimizer_id + name.value
+            cache.add(name=name, value=all_params[cache_item_key])
+        return RMSprop(layer_id=self.id,
+                       cache=cache,
+                       update_values=self.update_values)

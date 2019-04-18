@@ -2,18 +2,16 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
 
-class Conv2DTest(TestModeLayerWithWeights):
-    name = Name.CONV2D_TEST
+class Conv2DTest(TestModeLayer):
 
-    def __init__(self, block_name: str, weights: Cache, stride: int, padding: int):
-        super().__init__(block_name=block_name)
+    def __init__(self, weights: Cache, stride: int, padding: int):
         self.weights = weights
         self.num_filters = weights.get(name=Name.WEIGHTS).shape[0]
         self.filter_height = weights.get(name=Name.WEIGHTS).shape[2]
@@ -48,28 +46,6 @@ class Conv2DTest(TestModeLayerWithWeights):
         output_data = res.reshape(self.num_filters, out_h, out_w, N)
         output_data = output_data.transpose(3, 0, 1, 2)
         return output_data
-
-    def content(self) -> dict:
-        layer_id = self.block_name + Conv2DTest.name.value
-        result = {}
-        for item_name in self.weights.get_keys():
-            data_value = self.weights.get(name=item_name)
-            data_key = layer_id + item_name.value
-            result[data_key] = data_value
-        return result
-
-    def from_params(self, all_params):
-        weights = Cache()
-
-        layer_id = self.block_name + Conv2DTest.name.value
-        for w_name in [Name.WEIGHTS, Name.BIASES]:
-            w_key = layer_id + w_name.value
-            w_value = all_params[w_key]
-            weights.add(name=w_name, value=w_value)
-        return Conv2DTest(block_name=self.block_name, weights=weights, stride=self.stride, padding=self.padding)
-
-    def accept(self, visitor: TestLayerVisitor):
-        visitor.visit_weighted_test(self)
 
 
 class Conv2DTrain(TrainModeLayerWithWeights):
@@ -146,9 +122,8 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.BIASES, value=dbiases)
         return layer_backward_run
 
-    def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
-        return Conv2DTest(block_name=self.block_name,
-                          weights=self.weights,
+    def to_test(self, layer_forward_run: Cache) -> TestModeLayer:
+        return Conv2DTest(weights=self.weights,
                           padding=self.padding,
                           stride=self.stride)
 
@@ -160,6 +135,36 @@ class Conv2DTrain(TrainModeLayerWithWeights):
                            stride=self.stride,
                            padding=self.padding,
                            optimizer=new_optimizer)
+
+    def content(self, layer_forward_run: Cache) -> dict:
+        layer_id = self.block_name + Conv2DTrain.name.value
+        result = {}
+
+        for w_name in self.weights.get_keys():
+            w_value = self.weights.get(name=w_name)
+            w_key = layer_id + w_name.value
+            result[w_key] = w_value
+
+        optimizer_content = self.optimizer.memory_content()
+        result = {**result.copy(), **optimizer_content}
+        return result
+
+    def from_params(self, all_params) -> tuple:
+        layer_id = self.block_name + Conv2DTrain.name.value
+
+        weights = Cache()
+        for w_name in self.weights.get_keys():
+            w_key = layer_id + w_name.value
+            w_value = all_params[w_key]
+            weights.add(name=w_name, value=w_value)
+
+        new_optimizer = self.optimizer.from_params(all_params=all_params)
+
+        return Conv2DTrain(block_name=self.block_name,
+                           stride=self.stride,
+                           padding=self.padding,
+                           weights=weights,
+                           optimizer=new_optimizer), Cache()
 
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)

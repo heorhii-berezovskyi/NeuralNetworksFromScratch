@@ -2,17 +2,15 @@ import numpy as np
 from numpy import ndarray
 
 from neural_nets.model.Cache import Cache
-from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayerWithWeights
+from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TrainLayerVisitor, TestLayerVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
-class BatchNorm2DTest(TestModeLayerWithWeights):
-    name = Name.BATCH_NORM_2D_TEST
+class BatchNorm2DTest(TestModeLayer):
 
-    def __init__(self, block_name: str, weights: Cache, params: Cache):
-        super().__init__(block_name=block_name)
+    def __init__(self, weights: Cache, params: Cache):
         self.weights = weights
         self.params = params
 
@@ -28,37 +26,6 @@ class BatchNorm2DTest(TestModeLayerWithWeights):
 
         output_data = output_flat.reshape(N, H, W, C).transpose(0, 3, 1, 2)
         return output_data
-
-    def content(self) -> dict:
-        layer_id = self.block_name + BatchNorm2DTest.name.value
-        result = {}
-        for w_name, p_name in zip(self.weights.get_keys(), self.params.get_keys()):
-            w = self.weights.get(name=w_name)
-            w_key = layer_id + w_name.value
-            result[w_key] = w
-
-            p = self.params.get(name=p_name)
-            p_key = layer_id + p_name.value
-            result[p_key] = p
-        return result
-
-    def from_params(self, all_params):
-        weights = Cache()
-        params = Cache()
-
-        layer_id = self.block_name + BatchNorm2DTest.name.value
-        for w_name, p_name in zip([Name.GAMMA, Name.BETA], [Name.RUNNING_MEAN, Name.RUNNING_VAR]):
-            w_key = layer_id + w_name.value
-            w_value = all_params[w_key]
-            weights.add(name=w_name, value=w_value)
-
-            p_key = layer_id + p_name.value
-            p_value = all_params[p_key]
-            params.add(name=p_name, value=p_value)
-        return BatchNorm2DTest(block_name=self.block_name, weights=weights, params=params)
-
-    def accept(self, visitor: TestLayerVisitor):
-        visitor.visit_weighted_test(self)
 
 
 class BatchNorm2DTrain(TrainModeLayerWithWeights):
@@ -122,8 +89,12 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         layer_backward_run.add(name=Name.BETA, value=dbeta)
         return layer_backward_run
 
-    def to_test(self, test_layer_params: Cache) -> TestModeLayerWithWeights:
-        return BatchNorm2DTest(block_name=self.block_name, weights=self.weights, params=test_layer_params)
+    def to_test(self, layer_forward_run: Cache) -> TestModeLayer:
+        params = Cache()
+        params.add(name=Name.RUNNING_MEAN, value=layer_forward_run.get(name=Name.RUNNING_MEAN))
+        params.add(name=Name.RUNNING_VAR, value=layer_forward_run.get(name=Name.RUNNING_VAR))
+        return BatchNorm2DTest(weights=self.weights,
+                               params=params)
 
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
@@ -132,6 +103,46 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
                                 weights=new_weights,
                                 momentum=self.momentum,
                                 optimizer=new_optimizer)
+
+    def content(self, layer_forward_run: Cache) -> dict:
+        layer_id = self.block_name + BatchNorm2DTrain.name.value
+        result = {}
+
+        for w_name in self.weights.get_keys():
+            w_value = self.weights.get(name=w_name)
+            w_key = layer_id + w_name.value
+            result[w_key] = w_value
+
+        for p_name in [Name.RUNNING_MEAN, Name.RUNNING_VAR]:
+            p_value = layer_forward_run.get(name=p_name)
+            p_key = layer_id + p_name.value
+            result[p_key] = p_value
+
+        optimizer_content = self.optimizer.memory_content()
+        result = {**result.copy(), **optimizer_content}
+        return result
+
+    def from_params(self, all_params) -> tuple:
+        layer_id = self.block_name + BatchNorm2DTrain.name.value
+
+        weights = Cache()
+        for w_name in self.weights.get_keys():
+            w_key = layer_id + w_name.value
+            w_value = all_params[w_key]
+            weights.add(name=w_name, value=w_value)
+
+        params = Cache()
+        for p_name in [Name.RUNNING_MEAN, Name.RUNNING_VAR]:
+            p_key = layer_id + p_name.value
+            p_value = all_params[p_key]
+            params.add(name=p_name, value=p_value)
+
+        new_optimizer = self.optimizer.from_params(all_params=all_params)
+
+        return BatchNorm2DTrain(block_name=self.block_name,
+                                momentum=self.momentum,
+                                weights=weights,
+                                optimizer=new_optimizer), params
 
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_batch_norm_2d_train(self)

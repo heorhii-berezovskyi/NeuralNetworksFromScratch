@@ -4,18 +4,14 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayer, TestModeLayer
 from neural_nets.model.Name import Name
-from neural_nets.model.Visitor import TestLayerVisitor, TrainLayerVisitor
+from neural_nets.model.Visitor import TrainLayerVisitor
 
 
 class Dropout1DTest(TestModeLayer):
-    name = Name.DROPOUT1D_TEST
 
     def forward(self, input_data: ndarray) -> ndarray:
         output_data = input_data
         return output_data
-
-    def accept(self, visitor: TestLayerVisitor):
-        visitor.visit_weightless_test(self)
 
 
 class Dropout1DTrain(TrainModeLayer):

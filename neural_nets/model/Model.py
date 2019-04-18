@@ -4,9 +4,9 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
-from neural_nets.model.TestModelLoadVisitor import TestModelLoadVisitor
-from neural_nets.model.TestModelSaveVisitor import TestModelSaveVisitor
 from neural_nets.model.TrainModelInitVisitor import TrainModelInitVisitor
+from neural_nets.model.TrainModelLoadVisitor import TrainModelLoadVisitor
+from neural_nets.model.TrainModelSaveVisitor import TrainModelSaveVisitor
 from neural_nets.optimizer.Optimizer import WeightsUpdateVisitor
 
 
@@ -33,21 +33,6 @@ class TestModel:
         accuracy = np.mean(predicted_class == labels)
         return accuracy
 
-    def save(self, path: str):
-        visitor = TestModelSaveVisitor()
-        for layer in self.layers:
-            layer.accept(visitor)
-        all_params = visitor.get_result()
-        np.savez(path, **all_params)
-
-    def load(self, path: str):
-        all_params = np.load(path)
-        visitor = TestModelLoadVisitor(all_params=all_params)
-        for layer in self.layers:
-            layer.accept(visitor)
-        all_params.close()
-        return TestModel(layers=visitor.get_result())
-
 
 class TrainModel:
     """
@@ -65,7 +50,8 @@ class TrainModel:
         visitor = TrainModelInitVisitor()
         for layer in self.layers:
             layer.accept(visitor)
-        return visitor.get_result()
+        initial_model_forward_run = visitor.get_result()
+        return initial_model_forward_run
 
     def forward(self, model_forward_run: list, images: ndarray) -> tuple:
         """
@@ -114,7 +100,23 @@ class TrainModel:
         :return: a built test model.
         """
         test_layers = []
-        for train_layer, layer_forward_run in zip(self.layers, model_forward_run):
+        for train_layer, layer_forward_run in zip(self.layers, model_forward_run.copy()):
             test_layer = train_layer.to_test(layer_forward_run)
             test_layers.append(test_layer)
         return TestModel(layers=test_layers)
+
+    def save(self, path: str, model_forward_run: list):
+        visitor = TrainModelSaveVisitor(model_forward_run=model_forward_run.copy())
+        for layer in reversed(self.layers):
+            layer.accept(visitor)
+        all_params = visitor.get_result()
+        np.savez(path, **all_params)
+
+    def load(self, path: str) -> tuple:
+        all_params = np.load(path)
+        visitor = TrainModelLoadVisitor(all_params=all_params)
+        for layer in self.layers:
+            layer.accept(visitor)
+        all_params.close()
+        layers, model_forward_run = visitor.get_result()
+        return TrainModel(layers=layers), model_forward_run

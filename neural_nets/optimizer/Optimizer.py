@@ -25,6 +25,14 @@ class Optimizer:
     def update_weights(self, weights: Cache) -> Cache:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
+    @abstractmethod
+    def memory_content(self) -> dict:
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def from_params(self, all_params):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
 
 class WeightsUpdateVisitor(TrainLayerVisitor):
     def __init__(self, model_backward_run: list):

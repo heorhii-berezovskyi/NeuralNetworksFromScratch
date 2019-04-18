@@ -12,21 +12,25 @@ from neural_nets.model.Linear import LinearTrain
 from neural_nets.model.MaxPool import MaxPoolTrain
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Relu import ReluTrain
-from neural_nets.optimizer.Adam import Adam
+from neural_nets.optimizer.SGDNesterovMomentum import SGDNesterovMomentum
 from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
 from neural_nets.utils.PlotUtils import plot
 
 
 def run():
-    # SGDNesterovMomentum.learning_rate = learning_rate
-    # SGDNesterovMomentum.mu = mu
+    # SGDMomentum.learning_rate = 0.0001
+
+    SGDNesterovMomentum.learning_rate = 0.02
+    SGDNesterovMomentum.mu = 0.9
 
     # RMSprop.learning_rate = 0.02
     # RMSprop.decay_rate = 0.9
 
-    Adam.learning_rate = 0.005
-    Adam.beta1 = 0.9
-    Adam.beta2 = 0.999
+    # Adam.learning_rate = 0.005
+    # Adam.beta1 = 0.9
+    # Adam.beta2 = 0.999
+
+    # Adagrad.learning_rate = 0.02
 
     loss_function = CrossEntropyLoss()
     # loss = SVM_Loss(10.0)
@@ -35,17 +39,21 @@ def run():
                                         filter_depth=1,
                                         filter_height=3,
                                         filter_width=3)
-    l1 = Conv2DTrain(block_name='conv1',
+
+    block_1 = 'conv1'
+    l1 = Conv2DTrain(block_name=block_1,
                      weights=weights1,
                      stride=1,
                      padding=1,
-                     optimizer=Adam.init_memory(weights=weights1))
+                     optimizer=SGDNesterovMomentum.init_memory(layer_id=block_1 + Conv2DTrain.name.value,
+                                                               weights=weights1))
 
     weights2 = BatchNorm2DTrain.init_weights(num_of_channels=32)
-    l2 = BatchNorm2DTrain(block_name='conv1',
+    l2 = BatchNorm2DTrain(block_name=block_1,
                           weights=weights2,
                           momentum=0.9,
-                          optimizer=Adam.init_memory(weights=weights2))
+                          optimizer=SGDNesterovMomentum.init_memory(layer_id=block_1 + BatchNorm2DTrain.name.value,
+                                                                    weights=weights2))
     l3 = ReluTrain()
     l4 = Dropout2DTrain(keep_active_prob=0.9)
     l5 = MaxPoolTrain(pool_height=2, pool_width=2, stride=2)
@@ -54,37 +62,46 @@ def run():
                                         filter_depth=32,
                                         filter_height=3,
                                         filter_width=3)
-    l6 = Conv2DTrain(block_name='conv2',
+
+    block_2 = 'conv2'
+    l6 = Conv2DTrain(block_name=block_2,
                      weights=weights6,
                      stride=1,
                      padding=1,
-                     optimizer=Adam.init_memory(weights=weights6))
+                     optimizer=SGDNesterovMomentum.init_memory(layer_id=block_2 + Conv2DTrain.name.value,
+                                                               weights=weights6))
     weights7 = BatchNorm2DTrain.init_weights(num_of_channels=64)
-    l7 = BatchNorm2DTrain(block_name='conv2',
+    l7 = BatchNorm2DTrain(block_name=block_2,
                           weights=weights7,
                           momentum=0.9,
-                          optimizer=Adam.init_memory(weights=weights7))
+                          optimizer=SGDNesterovMomentum.init_memory(layer_id=block_2 + BatchNorm2DTrain.name.value,
+                                                                    weights=weights7))
     l8 = ReluTrain()
     l9 = Dropout2DTrain(keep_active_prob=0.7)
     l10 = MaxPoolTrain(pool_height=2, pool_width=2, stride=2)
 
     weights11 = LinearTrain.init_weights(input_dim=3136, num_of_neurons=128)
-    l11 = LinearTrain(block_name='linear1',
+    block_3 = 'linear1'
+    l11 = LinearTrain(block_name=block_3,
                       weights=weights11,
-                      optimizer=Adam.init_memory(weights=weights11))
+                      optimizer=SGDNesterovMomentum.init_memory(layer_id=block_3 + LinearTrain.name.value,
+                                                                weights=weights11))
 
     weights12 = BatchNorm1DTrain.init_weights(input_dim=128)
-    l12 = BatchNorm1DTrain(block_name='linear1',
+    l12 = BatchNorm1DTrain(block_name=block_3,
                            weights=weights12,
                            momentum=0.9,
-                           optimizer=Adam.init_memory(weights=weights12))
+                           optimizer=SGDNesterovMomentum.init_memory(layer_id=block_3 + BatchNorm1DTrain.name.value,
+                                                                     weights=weights12))
     l13 = ReluTrain()
     l14 = Dropout1DTrain(keep_active_prob=0.5)
 
     weights15 = LinearTrain.init_weights(input_dim=128, num_of_neurons=10)
-    l15 = LinearTrain(block_name='linear2',
+    block_4 = 'linear2'
+    l15 = LinearTrain(block_name=block_4,
                       weights=weights15,
-                      optimizer=Adam.init_memory(weights=weights15))
+                      optimizer=SGDNesterovMomentum.init_memory(layer_id=block_4 + LinearTrain.name.value,
+                                                                weights=weights15))
 
     train_layers = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15]
     train_model = TrainModel(layers=train_layers)
@@ -105,7 +122,9 @@ def run():
     test_accuracies = []
     train_accuracies = []
 
-    model_forward_run = train_model.init_model()
+    # model_forward_run = train_model.init_model()
+
+    train_model, model_forward_run = train_model.load(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv200.npz')
 
     batch_size = 64
     test_batch_size = 5000
@@ -119,22 +138,19 @@ def run():
 
         losses.append(data_loss)
 
-        # model_backward_run = train_model.backward(loss_function=loss_function,
-        #                                           model_forward_run=model_forward_run,
-        #                                           loss_run=loss_run)
-        #
-        # train_model = train_model.optimize(model_backward_run=model_backward_run)
+        model_backward_run = train_model.backward(loss_function=loss_function,
+                                                  model_forward_run=model_forward_run,
+                                                  loss_run=loss_run)
+
+        train_model = train_model.optimize(model_backward_run=model_backward_run)
 
         print(i)
         if i % 200 == 0:
-            test_model = train_model.to_test(model_forward_run)
-
-            path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv200.npz'
-            test_model = test_model.load(path=path)
+            test_model = train_model.to_test(model_forward_run=model_forward_run)
 
             # path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv'
             # path += str(i)
-            # test_model.save(path)
+            # train_model.save(path=path, model_forward_run=model_forward_run)
             # print('Saved model to: {}'.format(path))
 
             batch_test_accuracies = []
