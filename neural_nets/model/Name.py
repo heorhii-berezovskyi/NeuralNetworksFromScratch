@@ -12,15 +12,6 @@ class Name(Enum):
     CONV2D_TRAIN = 'conv2d_train'
     MAX_POOL_TRAIN = 'maxpool_train'
 
-    LINEAR_TEST = 'linear_test'
-    RELU_TEST = 'relu_test'
-    BATCH_NORM_1D_TEST = 'batchnorm1d_test'
-    BATCH_NORM_2D_TEST = 'batchnorm2d_test'
-    DROPOUT1D_TEST = 'dropout1d_test'
-    DROPOUT2D_TEST = 'dropout2d_test'
-    CONV2D_TEST = 'conv2d_test'
-    MAX_POOL_TEST = 'maxpool_test'
-
     WEIGHTS = 'weights'
     BIASES = 'biases'
     GAMMA = 'gamma'
@@ -61,3 +52,11 @@ class Name(Enum):
     RMSPROP = 'RMSprop'
     SGD_MOMENTUM = 'SGDMomentum'
     SGD_NESTEROV_MOMENTUM = 'SGDNesterovMomentum'
+
+    LEARNING_RATE = 'learning_rate'
+    BETA_1 = 'beta1'
+    BETA_2 = 'beta2'
+
+    DECAY_RATE = 'decay_rate'
+
+    MU = 'mu'

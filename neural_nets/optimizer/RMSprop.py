@@ -56,6 +56,12 @@ class RMSprop(Optimizer):
         for name in self.cache.get_keys():
             cache_item_key = optimizer_id + name.value
             result[cache_item_key] = self.cache.get(name=name)
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        result[learning_rate_key] = RMSprop.learning_rate
+
+        decay_rate_key = optimizer_id + Name.DECAY_RATE.value
+        result[decay_rate_key] = RMSprop.decay_rate
         return result
 
     def from_params(self, all_params):
@@ -65,6 +71,12 @@ class RMSprop(Optimizer):
         for name in self.cache.get_keys():
             cache_item_key = optimizer_id + name.value
             cache.add(name=name, value=all_params[cache_item_key])
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        RMSprop.learning_rate = all_params[learning_rate_key]
+
+        decay_rate_key = optimizer_id + Name.DECAY_RATE.value
+        RMSprop.decay_rate = all_params[decay_rate_key]
         return RMSprop(layer_id=self.id,
                        cache=cache,
                        update_values=self.update_values)

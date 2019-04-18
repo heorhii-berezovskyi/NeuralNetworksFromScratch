@@ -61,6 +61,12 @@ class SGDNesterovMomentum(Optimizer):
 
             velocity_prev_param_key = optimizer_id + Name.VEL_PREV.value + name.value
             result[velocity_prev_param_key] = self.velocity_previous.get(name=name)
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        result[learning_rate_key] = SGDNesterovMomentum.learning_rate
+
+        mu_key = optimizer_id + Name.MU.value
+        result[mu_key] = SGDNesterovMomentum.mu
         return result
 
     def from_params(self, all_params):
@@ -74,6 +80,12 @@ class SGDNesterovMomentum(Optimizer):
 
             velocity_prev_param_key = optimizer_id + Name.VEL_PREV.value + name.value
             velocity_previous.add(name=name, value=all_params[velocity_prev_param_key])
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        SGDNesterovMomentum.learning_rate = all_params[learning_rate_key]
+
+        mu_key = optimizer_id + Name.MU.value
+        SGDNesterovMomentum.mu = all_params[mu_key]
         return SGDNesterovMomentum(layer_id=self.id,
                                    velocity=velocity,
                                    velocity_previous=velocity_previous)

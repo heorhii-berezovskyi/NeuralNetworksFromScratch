@@ -48,6 +48,12 @@ class SGDMomentum(Optimizer):
         for name in self.velocity.get_keys():
             velocity_item_key = optimizer_id + name.value
             result[velocity_item_key] = self.velocity.get(name=name)
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        result[learning_rate_key] = SGDMomentum.learning_rate
+
+        mu_key = optimizer_id + Name.MU.value
+        result[mu_key] = SGDMomentum.mu
         return result
 
     def from_params(self, all_params):
@@ -56,5 +62,11 @@ class SGDMomentum(Optimizer):
         for name in self.velocity.get_keys():
             velocity_item_key = optimizer_id + name.value
             velocity.add(name=name, value=all_params[velocity_item_key])
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        SGDMomentum.learning_rate = all_params[learning_rate_key]
+
+        mu_key = optimizer_id + Name.MU.value
+        SGDMomentum.mu = all_params[mu_key]
         return SGDMomentum(layer_id=self.id,
                            velocity=velocity)

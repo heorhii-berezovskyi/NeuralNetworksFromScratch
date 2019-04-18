@@ -56,6 +56,8 @@ class Adagrad(Optimizer):
         for name in self.cache.get_keys():
             item_key = optimizer_id + name.value
             result[item_key] = self.cache.get(name=name)
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        result[learning_rate_key] = Adagrad.learning_rate
         return result
 
     def from_params(self, all_params):
@@ -64,6 +66,8 @@ class Adagrad(Optimizer):
         for cache_name in self.cache.get_keys():
             cache_key = optimizer_id + cache_name.value
             cache.add(name=cache_name, value=all_params[cache_key])
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        Adagrad.learning_rate = all_params[learning_rate_key]
         return Adagrad(layer_id=self.id,
                        cache=cache,
                        update_values=self.update_values)

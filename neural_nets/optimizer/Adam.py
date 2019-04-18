@@ -77,6 +77,15 @@ class Adam(Optimizer):
             result[second_moment_param_key] = self.second_moment.get(name=name)
         num_iter_key = optimizer_id + Name.NUM_ITER.value
         result[num_iter_key] = np.array([self.num_iter], dtype=int)
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        result[learning_rate_key] = Adam.learning_rate
+
+        beta1_key = optimizer_id + Name.BETA_1.value
+        result[beta1_key] = Adam.beta1
+
+        beta2_key = optimizer_id + Name.BETA_2.value
+        result[beta2_key] = Adam.beta2
         return result
 
     def from_params(self, all_params):
@@ -94,6 +103,15 @@ class Adam(Optimizer):
 
         num_iter_key = optimizer_id + Name.NUM_ITER.value
         num_iter_value = all_params[num_iter_key][0]
+
+        learning_rate_key = optimizer_id + Name.LEARNING_RATE.value
+        Adam.learning_rate = all_params[learning_rate_key]
+
+        beta1_key = optimizer_id + Name.BETA_1.value
+        Adam.beta1 = all_params[beta1_key]
+
+        beta2_key = optimizer_id + Name.BETA_2.value
+        Adam.beta2 = all_params[beta2_key]
         return Adam(layer_id=self.id,
                     num_iter=num_iter_value,
                     first_moment=first_moment,
