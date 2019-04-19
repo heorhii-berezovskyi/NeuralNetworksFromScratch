@@ -148,8 +148,18 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         visitor.visit_batch_norm_2d_train(self)
 
     @staticmethod
-    def init_weights(num_of_channels: int) -> Cache:
+    def _init_weights(num_of_channels: int) -> Cache:
         weights = Cache()
         weights.add(name=Name.GAMMA, value=np.ones(num_of_channels, dtype=float))
         weights.add(name=Name.BETA, value=np.zeros(num_of_channels, dtype=float))
         return weights
+
+    @classmethod
+    def init(cls, block_name: str, num_of_channels: int, momentum: float, optimizer_class):
+        weights = BatchNorm2DTrain._init_weights(num_of_channels=num_of_channels)
+        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + BatchNorm2DTrain.name.value,
+                                                         weights=weights)
+        return cls(block_name=block_name,
+                   weights=weights,
+                   momentum=momentum,
+                   optimizer=optimizer_instance)

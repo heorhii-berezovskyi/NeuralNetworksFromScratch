@@ -33,6 +33,11 @@ class Optimizer:
     def from_params(self, all_params):
         raise NotImplementedError(NOT_IMPLEMENTED)
 
+    @classmethod
+    @abstractmethod
+    def init_memory(cls, layer_id: str, weights: Cache):
+        raise NotImplementedError(NOT_IMPLEMENTED)
+
 
 class WeightsUpdateVisitor(TrainLayerVisitor):
     def __init__(self, model_backward_run: list):

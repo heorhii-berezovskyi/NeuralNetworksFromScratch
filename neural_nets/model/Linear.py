@@ -92,8 +92,19 @@ class LinearTrain(TrainModeLayerWithWeights):
         visitor.visit_affine_train(self)
 
     @staticmethod
-    def init_weights(input_dim: int, num_of_neurons: int):
+    def _init_weights(input_dim: int, num_of_neurons: int):
         weights = Cache()
         weights.add(name=Name.WEIGHTS, value=np.random.rand(input_dim, num_of_neurons) * np.sqrt(2. / input_dim))
         weights.add(name=Name.BIASES, value=np.zeros(num_of_neurons, dtype=float))
         return weights
+
+    @classmethod
+    def init(cls, block_name: str, input_dim: int, num_of_neurons: int, optimizer_class):
+        weights = LinearTrain._init_weights(input_dim=input_dim,
+                                            num_of_neurons=num_of_neurons)
+
+        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + LinearTrain.name.value,
+                                                         weights=weights)
+        return cls(block_name=block_name,
+                   weights=weights,
+                   optimizer=optimizer_instance)

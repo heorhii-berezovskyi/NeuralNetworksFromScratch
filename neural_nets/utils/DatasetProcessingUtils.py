@@ -2,19 +2,27 @@ import numpy as np
 from numpy import ndarray
 
 
-def split_into_labels_and_data(data: ndarray) -> tuple:
-    labels = data[:, 0]
-    data = np.delete(data, 0, axis=1)
-    return labels.astype(np.uint8), data
+# def split_into_labels_and_data(data: ndarray) -> tuple:
+#     labels = data[:, 0]
+#     data = np.delete(data, 0, axis=1)
+#     return labels.astype(np.uint8), data
 
 
-def preprocess_dataset(dataset: ndarray) -> ndarray:
-    dataset[:, 1:] -= np.mean(dataset[:, 1:], dtype=np.float64)
-    return dataset
+# def preprocess_dataset(dataset: ndarray) -> ndarray:
+#     dataset[:, 1:] -= np.mean(dataset[:, 1:], dtype=np.float64)
+#     return dataset
+
+def preprocess(data: ndarray) -> ndarray:
+    data -= np.mean(data, dtype=np.float64)
+    return data
 
 
-def sample(dataset: ndarray, batch_size: int) -> ndarray:
-    return dataset[np.random.choice(dataset.shape[0], batch_size, replace=False), :]
+# def sample(dataset: ndarray, batch_size: int) -> ndarray:
+#     return dataset[np.random.choice(dataset.shape[0], batch_size, replace=False), :]
+
+def sample(labels: ndarray, data: ndarray, batch_size: int) -> tuple:
+    idx = np.random.choice(np.arange(len(labels)), batch_size, replace=False)
+    return labels[idx], data[idx]
 
 
 def get_im2col_indices(x_shape: tuple, field_height: int, field_width: int, padding: int, stride: int) -> tuple:

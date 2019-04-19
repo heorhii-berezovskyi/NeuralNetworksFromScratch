@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import ndarray
 
 from neural_nets.dataset.DatasetLoader import DatasetLoader
 from neural_nets.model.BatchNorm1D import BatchNorm1DTrain
@@ -9,12 +10,24 @@ from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Dropout1D import Dropout1DTrain
 from neural_nets.model.Dropout2D import Dropout2DTrain
 from neural_nets.model.Linear import LinearTrain
+from neural_nets.model.Loss import Loss
 from neural_nets.model.MaxPool import MaxPoolTrain
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Relu import ReluTrain
+from neural_nets.optimizer.Optimizer import Optimizer
 from neural_nets.optimizer.SGDNesterovMomentum import SGDNesterovMomentum
-from neural_nets.utils.DatasetProcessingUtils import preprocess_dataset, sample, split_into_labels_and_data
+from neural_nets.utils.DatasetProcessingUtils import preprocess
+from neural_nets.utils.DatasetProcessingUtils import sample
 from neural_nets.utils.PlotUtils import plot
+
+
+class Trainer:
+    def __init__(self, layers: list, optimizer: Optimizer, loss_function: Loss):
+        pass
+
+    def train(self, num_epoch: int, train_labels: ndarray, train_data: ndarray, test_labels: ndarray,
+              test_data: ndarray):
+        pass
 
 
 def run():
@@ -35,73 +48,63 @@ def run():
     loss_function = CrossEntropyLoss()
     # loss = SVM_Loss(10.0)
 
-    weights1 = Conv2DTrain.init_weights(num_filters=32,
-                                        filter_depth=1,
-                                        filter_height=3,
-                                        filter_width=3)
-
     block_1 = 'conv1'
-    l1 = Conv2DTrain(block_name=block_1,
-                     weights=weights1,
-                     stride=1,
-                     padding=1,
-                     optimizer=SGDNesterovMomentum.init_memory(layer_id=block_1 + Conv2DTrain.name.value,
-                                                               weights=weights1))
+    l1 = Conv2DTrain.init(block_name=block_1,
+                          num_filters=32,
+                          filter_depth=1,
+                          filter_height=3,
+                          filter_width=3,
+                          stride=1,
+                          padding=1,
+                          optimizer_class=SGDNesterovMomentum)
 
-    weights2 = BatchNorm2DTrain.init_weights(num_of_channels=32)
-    l2 = BatchNorm2DTrain(block_name=block_1,
-                          weights=weights2,
-                          momentum=0.9,
-                          optimizer=SGDNesterovMomentum.init_memory(layer_id=block_1 + BatchNorm2DTrain.name.value,
-                                                                    weights=weights2))
+    l2 = BatchNorm2DTrain.init(block_name=block_1,
+                               num_of_channels=32,
+                               momentum=0.9,
+                               optimizer_class=SGDNesterovMomentum)
+
     l3 = ReluTrain()
     l4 = Dropout2DTrain(keep_active_prob=0.9)
     l5 = MaxPoolTrain(pool_height=2, pool_width=2, stride=2)
 
-    weights6 = Conv2DTrain.init_weights(num_filters=64,
-                                        filter_depth=32,
-                                        filter_height=3,
-                                        filter_width=3)
-
     block_2 = 'conv2'
-    l6 = Conv2DTrain(block_name=block_2,
-                     weights=weights6,
-                     stride=1,
-                     padding=1,
-                     optimizer=SGDNesterovMomentum.init_memory(layer_id=block_2 + Conv2DTrain.name.value,
-                                                               weights=weights6))
-    weights7 = BatchNorm2DTrain.init_weights(num_of_channels=64)
-    l7 = BatchNorm2DTrain(block_name=block_2,
-                          weights=weights7,
-                          momentum=0.9,
-                          optimizer=SGDNesterovMomentum.init_memory(layer_id=block_2 + BatchNorm2DTrain.name.value,
-                                                                    weights=weights7))
+    l6 = Conv2DTrain.init(block_name=block_2,
+                          num_filters=64,
+                          filter_depth=32,
+                          filter_height=3,
+                          filter_width=3,
+                          stride=1,
+                          padding=1,
+                          optimizer_class=SGDNesterovMomentum)
+
+    l7 = BatchNorm2DTrain.init(block_name=block_2,
+                               num_of_channels=64,
+                               momentum=0.9,
+                               optimizer_class=SGDNesterovMomentum)
+
     l8 = ReluTrain()
     l9 = Dropout2DTrain(keep_active_prob=0.7)
     l10 = MaxPoolTrain(pool_height=2, pool_width=2, stride=2)
 
-    weights11 = LinearTrain.init_weights(input_dim=3136, num_of_neurons=128)
     block_3 = 'linear1'
-    l11 = LinearTrain(block_name=block_3,
-                      weights=weights11,
-                      optimizer=SGDNesterovMomentum.init_memory(layer_id=block_3 + LinearTrain.name.value,
-                                                                weights=weights11))
+    l11 = LinearTrain.init(block_name=block_3,
+                           input_dim=3136,
+                           num_of_neurons=128,
+                           optimizer_class=SGDNesterovMomentum)
 
-    weights12 = BatchNorm1DTrain.init_weights(input_dim=128)
-    l12 = BatchNorm1DTrain(block_name=block_3,
-                           weights=weights12,
-                           momentum=0.9,
-                           optimizer=SGDNesterovMomentum.init_memory(layer_id=block_3 + BatchNorm1DTrain.name.value,
-                                                                     weights=weights12))
+    l12 = BatchNorm1DTrain.init(block_name=block_3,
+                                input_dim=128,
+                                momentum=0.9,
+                                optimizer_class=SGDNesterovMomentum)
+
     l13 = ReluTrain()
     l14 = Dropout1DTrain(keep_active_prob=0.5)
 
-    weights15 = LinearTrain.init_weights(input_dim=128, num_of_neurons=10)
     block_4 = 'linear2'
-    l15 = LinearTrain(block_name=block_4,
-                      weights=weights15,
-                      optimizer=SGDNesterovMomentum.init_memory(layer_id=block_4 + LinearTrain.name.value,
-                                                                weights=weights15))
+    l15 = LinearTrain.init(block_name=block_4,
+                           input_dim=128,
+                           num_of_neurons=10,
+                           optimizer_class=SGDNesterovMomentum)
 
     train_layers = [l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15]
     train_model = TrainModel(layers=train_layers)
@@ -114,9 +117,10 @@ def run():
 
     loader = DatasetLoader(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
 
-    train_dataset, test_dataset = loader.load('fmnist_train.npy', 'fmnist_test.npy')
-    train_dataset = preprocess_dataset(train_dataset)
-    test_dataset = preprocess_dataset(test_dataset)
+    train_labels, train_data, test_labels, test_data = loader.load('fmnist_train.npy', 'fmnist_test.npy')
+
+    train_data = preprocess(train_data)
+    test_data = preprocess(test_data)
 
     losses = []
     test_accuracies = []
@@ -124,17 +128,16 @@ def run():
 
     # model_forward_run = train_model.init_model()
 
-    train_model, model_forward_run = train_model.load(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv200.npz')
+    train_model, model_forward_run = train_model.load(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv400.npz')
 
     batch_size = 64
     test_batch_size = 5000
     for i in range(1000):
-        batch = sample(dataset=train_dataset, batch_size=batch_size)
-        label_batch, image_batch = split_into_labels_and_data(batch)
-        image_batch = image_batch.reshape((batch_size, 1, 28, 28))
+        train_label_batch, train_image_batch = sample(labels=train_labels, data=train_data, batch_size=batch_size)
+        train_image_batch = train_image_batch.reshape((batch_size, 1, 28, 28))
 
-        model_forward_run, scores = train_model.forward(model_forward_run=model_forward_run, images=image_batch)
-        data_loss, loss_run = loss_function.eval_data_loss(labels=label_batch, scores=scores)
+        model_forward_run, scores = train_model.forward(model_forward_run=model_forward_run, images=train_image_batch)
+        data_loss, loss_run = loss_function.eval_data_loss(labels=train_label_batch, scores=scores)
 
         losses.append(data_loss)
 
@@ -148,18 +151,19 @@ def run():
         if i % 200 == 0:
             test_model = train_model.to_test(model_forward_run=model_forward_run)
 
-            # path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv'
-            # path += str(i)
-            # train_model.save(path=path, model_forward_run=model_forward_run)
-            # print('Saved model to: {}'.format(path))
+            path = r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv'
+            path += str(i)
+            train_model.save(path=path, model_forward_run=model_forward_run)
+            print('Saved model to: {}'.format(path))
 
             batch_test_accuracies = []
             for k in range(2):
                 print(k)
-                test_batch = sample(dataset=test_dataset, batch_size=test_batch_size)
-                test_labels, test_data = split_into_labels_and_data(test_batch)
-                test_data = test_data.reshape((test_batch_size, 1, 28, 28))
-                batch_test_accuracies.append(test_model.test(labels=test_labels, images=test_data))
+                test_label_batch = test_labels[k * test_batch_size: k * test_batch_size + test_batch_size]
+                test_image_batch = test_data[k * test_batch_size: k * test_batch_size + test_batch_size]
+
+                test_image_batch = test_image_batch.reshape((test_batch_size, 1, 28, 28))
+                batch_test_accuracies.append(test_model.test(labels=test_label_batch, images=test_image_batch))
             test_accuracy = np.mean(batch_test_accuracies)
             test_accuracies.append(test_accuracy)
             print('On iteration ' + str(i) + ' test accuracy: ', test_accuracy)
@@ -167,10 +171,11 @@ def run():
             batch_train_accuracies = []
             for k in range(12):
                 print(k)
-                train_batch = sample(dataset=train_dataset, batch_size=test_batch_size)
-                train_labels, train_data = split_into_labels_and_data(data=train_batch)
-                train_data = train_data.reshape((test_batch_size, 1, 28, 28))
-                batch_train_accuracies.append(test_model.test(labels=train_labels, images=train_data))
+                train_label_batch = train_labels[k * test_batch_size: k * test_batch_size + test_batch_size]
+                train_image_batch = train_data[k * test_batch_size: k * test_batch_size + test_batch_size]
+
+                train_image_batch = train_image_batch.reshape((test_batch_size, 1, 28, 28))
+                batch_train_accuracies.append(test_model.test(labels=train_label_batch, images=train_image_batch))
             train_accuracy = np.mean(batch_train_accuracies)
             train_accuracies.append(train_accuracy)
             print('On iteration ' + str(i) + ' train accuracy: ', train_accuracy)

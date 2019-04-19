@@ -170,10 +170,33 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         visitor.visit_affine_train(self)
 
     @staticmethod
-    def init_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int) -> Cache:
+    def _init_weights(num_filters: int, filter_depth: int, filter_height: int, filter_width: int) -> Cache:
         weights = Cache()
         weights.add(name=Name.WEIGHTS,
                     value=np.random.rand(num_filters, filter_depth, filter_height, filter_width) * np.sqrt(
                         2. / (filter_depth * filter_height * filter_width)))
         weights.add(name=Name.BIASES, value=np.zeros(num_filters, dtype=float))
         return weights
+
+    @classmethod
+    def init(cls,
+             block_name: str,
+             num_filters: int,
+             filter_depth: int,
+             filter_height: int,
+             filter_width: int,
+             stride: int,
+             padding: int,
+             optimizer_class):
+        weights = Conv2DTrain._init_weights(num_filters=num_filters,
+                                            filter_depth=filter_depth,
+                                            filter_height=filter_height,
+                                            filter_width=filter_width)
+
+        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + Conv2DTrain.name.value,
+                                                         weights=weights)
+        return cls(block_name=block_name,
+                   weights=weights,
+                   optimizer=optimizer_instance,
+                   stride=stride,
+                   padding=padding)
