@@ -14,8 +14,7 @@ from neural_nets.model.Loss import Loss
 from neural_nets.model.MaxPool import MaxPoolTrain
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Relu import ReluTrain
-from neural_nets.optimizer.Optimizer import Optimizer
-from neural_nets.optimizer.SGDNesterovMomentum import SGDNesterovMomentum
+from neural_nets.optimizer.Adam import Adam
 from neural_nets.utils.DatasetProcessingUtils import preprocess
 from neural_nets.utils.DatasetProcessingUtils import sample
 from neural_nets.utils.PlotUtils import plot
@@ -74,6 +73,7 @@ class Trainer:
 
     def compile(self):
         self.train_model = TrainModel(layers=self.layers)
+        self.model_forward_run = self.train_model.init_model()
 
     def load_model(self, path: str):
         self.train_model, self.model_forward_run = self.train_model.load(path)
@@ -83,8 +83,6 @@ class Trainer:
 
         train_labels, train_data, test_labels, test_data = dataset
         C, H, W = image_shape
-
-        self.model_forward_run = self.train_model.init_model()
 
         losses = []
         test_accuracies = []
@@ -142,6 +140,11 @@ class Trainer:
         plot(losses=losses, test_accuracies=test_accuracies)
         plt.plot(train_accuracies)
         plt.show()
+
+    def predict(self, image: ndarray):
+        test_model = self.train_model.to_test(model_forward_run=self.model_forward_run)
+        result = test_model.predict(image=image)
+        return result
 
 
 # def run():
@@ -303,20 +306,20 @@ class Trainer:
 if __name__ == "__main__":
     # SGDMomentum.learning_rate = 0.0001
 
-    SGDNesterovMomentum.learning_rate = 0.02
-    SGDNesterovMomentum.mu = 0.9
+    # SGDNesterovMomentum.learning_rate = 0.02
+    # SGDNesterovMomentum.mu = 0.9
 
     # RMSprop.learning_rate = 0.02
     # RMSprop.decay_rate = 0.9
 
-    # Adam.learning_rate = 0.005
-    # Adam.beta1 = 0.9
-    # Adam.beta2 = 0.999
+    Adam.learning_rate = 0.005
+    Adam.beta1 = 0.9
+    Adam.beta2 = 0.999
 
     # Adagrad.learning_rate = 0.02
     # run()
 
-    trainer = Trainer(optimizer=SGDNesterovMomentum, loss_function=CrossEntropyLoss())
+    trainer = Trainer(optimizer=Adam, loss_function=CrossEntropyLoss())
 
     trainer.add_conv2d(block_name='conv1',
                        num_filters=32,
@@ -366,6 +369,7 @@ if __name__ == "__main__":
                        num_of_neurons=10)
 
     trainer.compile()
+    trainer.load_model(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv600.npz')
 
     loader = DatasetLoader(r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
 
@@ -376,10 +380,18 @@ if __name__ == "__main__":
 
     dataset = (train_labels, train_data, test_labels, test_data)
 
-    trainer.train(num_epoch=1000,
-                  batch_size=64,
-                  test_batch_size=5000,
-                  dataset=dataset,
-                  image_shape=(1, 28, 28),
-                  snapshot=200,
-                  snapshot_dir=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
+    # trainer.train(num_epoch=1000,
+    #               batch_size=64,
+    #               test_batch_size=5000,
+    #               dataset=dataset,
+    #               image_shape=(1, 28, 28),
+    #               snapshot=200,
+    #               snapshot_dir=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
+
+    image = train_data[1]
+    image = image.reshape(28, 28)
+    plt.matshow(image)
+    plt.show()
+
+    image = image.reshape(1, 1, 28, 28)
+    print(trainer.predict(image=image))

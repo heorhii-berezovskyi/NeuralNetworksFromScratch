@@ -33,6 +33,14 @@ class TestModel:
         accuracy = np.mean(predicted_class == labels)
         return accuracy
 
+    def predict(self, image: ndarray):
+        input_data = image
+        for layer in self.layers:
+            output_data = layer.forward(input_data)
+            input_data = output_data
+        predicted_class = np.argmax(input_data)
+        return predicted_class
+
 
 class TrainModel:
     """
