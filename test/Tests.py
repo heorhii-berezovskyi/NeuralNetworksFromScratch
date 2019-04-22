@@ -1,50 +1,25 @@
 import unittest
 
-from numpy.random import randint
-from numpy.random import randn
-
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
-from neural_nets.model.Linear import Linear
-from neural_nets.model.Model import Model
+from neural_nets.model.Model import TrainModel
+from neural_nets.model.Trainer import Trainer
+from neural_nets.optimizer.Adam import Adam
+
+
+class TrainerTest(unittest.TestCase):
+
+    def test_compile(self):
+        trainer = Trainer(optimizer=Adam, loss_function=CrossEntropyLoss())
+        trainer.add_linear(block_name='linear',
+                           input_dim=784,
+                           num_of_neurons=10)
+        trainer.compile()
+        self.assertTrue(len(trainer.layers) > 0, msg='Trainer cannot compile the model.')
 
 
 class ModelTest(unittest.TestCase):
 
-    def test_add_layer(self):
-        batch_size = 64
-        model = Model(reg=0.01)
-        linear = Linear(10, (784, batch_size))
-        model.add_layer(linear)
-        self.assertIn(linear, model.layers)
-
-    def test_forward(self):
-        batch_size = 64
-        model = Model(reg=0.01)
-        linear = Linear(10, (784, batch_size))
-        cross_entropy_loss = CrossEntropyLoss((10, 64))
-
-        model.add_layer(linear)
-        model.add_layer(cross_entropy_loss)
-
-        images = randn(64, 784)
-        labels = randint(0, 10, size=batch_size)
-        loss = model.forward(labels=labels, images=images)
-
-        self.assertGreater(loss, 0.0, "Cannot be zero or less than zeros")
-        self.assertIsNotNone(loss)
-        self.assertIsInstance(loss, float)
-
-    def test_backward(self):
-        batch_size = 64
-        model = Model(reg=0.01)
-        linear = Linear(10, (784, batch_size))
-        cross_entropy_loss = CrossEntropyLoss((10, 64))
-
-        model.add_layer(linear)
-        model.add_layer(cross_entropy_loss)
-
-        images = randn(64, 784)
-        labels = randint(0, 10, size=batch_size)
-        model.forward(labels=labels, images=images)
-        model.backward()
-        self.assertTrue(len(model.gradients) == 2, "Backpropogation doesn't work.")
+    def test_init_model(self):
+        model = TrainModel(layers=[])
+        test_model = model.to_test(model_forward_run=[])
+        self.assertTrue(len(test_model.layers) == 0)

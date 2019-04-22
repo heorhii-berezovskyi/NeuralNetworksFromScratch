@@ -34,6 +34,9 @@ class TestModel:
         return accuracy
 
     def predict(self, image: ndarray):
+        if len(image.shape) == 3:
+            C, H, W = image.shape
+            image = image.reshape((1, C, H, W))
         input_data = image
         for layer in self.layers:
             output_data = layer.forward(input_data)
