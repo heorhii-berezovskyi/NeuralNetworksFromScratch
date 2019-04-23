@@ -73,7 +73,7 @@ if __name__ == "__main__":
     ######################################
 
     trainer.compile()
-    trainer.load_model(path=r'200.npz')
+    # trainer.load_model(path=r'200.npz')
 
     loader = DatasetLoader()
 
@@ -85,13 +85,13 @@ if __name__ == "__main__":
 
     dataset = (train_labels, train_data, test_labels, test_data)
 
-    # trainer.train(num_epoch=1000,
-    #               batch_size=64,
-    #               test_batch_size=5000,
-    #               dataset=dataset,
-    #               image_shape=(1, 28, 28),
-    #               snapshot=200)
+    trainer.train(num_epoch=1000,
+                  batch_size=64,
+                  test_batch_size=5000,
+                  dataset=dataset,
+                  image_shape=(1, 28, 28),
+                  snapshot=200)
 
-    image = train_data[3]
-    image = image.reshape(1, 28, 28)
-    print(trainer.predict(image=image))
+    # image = train_data[3]
+    # image = image.reshape(1, 28, 28)
+    # print(trainer.predict(image=image))
