@@ -18,6 +18,10 @@ from neural_nets.utils.PlotUtils import plot
 
 class Trainer:
     def __init__(self, optimizer, loss_function: Loss):
+        """
+        :param optimizer: is a specified CLASS of an optimizer. Note, not an instance.
+        :param loss_function: is a specified loss function.
+        """
         self.optimizer = optimizer
         self.layers = []
         self.loss_function = loss_function
