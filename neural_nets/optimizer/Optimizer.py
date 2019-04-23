@@ -16,26 +16,46 @@ class Optimizer:
     @abstractmethod
     def update_memory(self, layer_backward_run: Cache):
         """
-        Performs train model weights update based on the model backward run.
+        Performs optimizer memory update based on the model backward run.
         :param layer_backward_run: is a data structure containing gradients by layer's weights.
+        :return: updated optimizer with updated memory.
         """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
     def update_weights(self, weights: Cache) -> Cache:
+        """
+        Performs weights update.
+        :param weights: weights to update.
+        :return: updated weights.
+        """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
     def memory_content(self) -> dict:
+        """
+        :return: dict containing optimizer state.
+        """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @abstractmethod
     def from_params(self, all_params):
+        """
+        Loads optimizer memory from saved params.
+        :param all_params: an opened .npy file.
+        :return: optimizer instance with loaded memory state.
+        """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
     @classmethod
     @abstractmethod
     def init_memory(cls, layer_id: str, weights: Cache):
+        """
+        Performs memory initialization for specified weights and layer id.
+        :param layer_id: is a layer identifier.
+        :param weights: layer wights.
+        :return: initialized optimizer instance.
+        """
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 

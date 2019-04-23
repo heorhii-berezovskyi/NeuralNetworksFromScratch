@@ -4,7 +4,7 @@ import numpy as np
 
 
 class DatasetLoader:
-    def __init__(self, directory: str):
+    def __init__(self, directory=''):
         self.directory = directory
 
     def load(self, train_dataset_name: str, test_dataset_name: str) -> tuple:

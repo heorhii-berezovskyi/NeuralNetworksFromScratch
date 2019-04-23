@@ -1,8 +1,8 @@
 from neural_nets.dataset.DatasetLoader import DatasetLoader
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
+from neural_nets.model.Trainer import Trainer
 from neural_nets.optimizer.Adam import Adam
 from neural_nets.utils.DatasetProcessingUtils import remove_mean_on_train, remove_mean_on_test
-from neural_nets.model.Trainer import Trainer
 
 if __name__ == "__main__":
     # SGDMomentum.learning_rate = 0.0001
@@ -73,9 +73,9 @@ if __name__ == "__main__":
     ######################################
 
     trainer.compile()
-    trainer.load_model(path=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv600.npz')
+    trainer.load_model(path=r'200.npz')
 
-    loader = DatasetLoader(directory=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
+    loader = DatasetLoader()
 
     train_labels, train_data, test_labels, test_data = loader.load(train_dataset_name='fmnist_train.npy',
                                                                    test_dataset_name='fmnist_test.npy')
@@ -90,9 +90,8 @@ if __name__ == "__main__":
     #               test_batch_size=5000,
     #               dataset=dataset,
     #               image_shape=(1, 28, 28),
-    #               snapshot=200,
-    #               snapshot_dir=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv')
+    #               snapshot=200)
 
-    image = train_data[7]
+    image = train_data[3]
     image = image.reshape(1, 28, 28)
     print(trainer.predict(image=image))

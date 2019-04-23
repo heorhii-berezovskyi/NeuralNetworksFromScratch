@@ -137,7 +137,7 @@ class Trainer:
         self.train_model, self.model_forward_run = self.train_model.load(path)
 
     def train(self, num_epoch: int, batch_size: int, test_batch_size: int, dataset: tuple, image_shape: tuple,
-              snapshot: int, snapshot_dir: str):
+              snapshot: int, snapshot_dir=''):
         """
         Trains model with a specified number of epochs.
         :param num_epoch: is a number of training epochs.
