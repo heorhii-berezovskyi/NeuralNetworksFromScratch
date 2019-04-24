@@ -6,6 +6,7 @@ from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor
 from neural_nets.optimizer.Optimizer import Optimizer
+from neural_nets.optimizer.Adam import Adam
 
 
 class BatchNorm1DTest(TestModeLayer):
@@ -128,6 +129,14 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
                                 weights=weights,
                                 optimizer=new_optimizer), params
 
+    def with_optimizer(self, optimizer_class):
+        return BatchNorm1DTrain(block_name=self.block_name,
+                                weights=self.weights,
+                                momentum=self.momentum,
+                                optimizer=optimizer_class.init_memory(
+                                    layer_id=self.block_name + BatchNorm1DTrain.name.value,
+                                    weights=self.weights))
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_batch_norm_1d_train(self)
 
@@ -139,7 +148,7 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         return weights
 
     @classmethod
-    def init(cls, block_name: str, input_dim: int, momentum: float, optimizer_class):
+    def init(cls, block_name: str, input_dim: int, momentum: float, optimizer_class=Adam):
         weights = BatchNorm1DTrain._init_weights(input_dim=input_dim)
         optimizer_instance = optimizer_class.init_memory(layer_id=block_name + BatchNorm1DTrain.name.value,
                                                          weights=weights)

@@ -6,7 +6,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.model.Model import TrainModel
 from neural_nets.model.Name import Name
-from neural_nets.model.Trainer import Trainer
+from neural_nets.run.Trainer import Trainer
 from neural_nets.optimizer.Adam import Adam
 
 

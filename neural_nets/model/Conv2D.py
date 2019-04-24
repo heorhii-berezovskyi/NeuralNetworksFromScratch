@@ -5,6 +5,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor
+from neural_nets.optimizer.Adam import Adam
 from neural_nets.optimizer.Optimizer import Optimizer
 from neural_nets.utils.DatasetProcessingUtils import im2col_indices, col2im_indices
 
@@ -166,6 +167,15 @@ class Conv2DTrain(TrainModeLayerWithWeights):
                            weights=weights,
                            optimizer=new_optimizer), Cache()
 
+    def with_optimizer(self, optimizer_class):
+        return Conv2DTrain(block_name=self.block_name,
+                           weights=self.weights,
+                           stride=self.stride,
+                           padding=self.padding,
+                           optimizer=optimizer_class.init_memory(
+                               layer_id=self.block_name + Conv2DTrain.name.value,
+                               weights=self.weights))
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)
 
@@ -187,7 +197,7 @@ class Conv2DTrain(TrainModeLayerWithWeights):
              filter_width: int,
              stride: int,
              padding: int,
-             optimizer_class):
+             optimizer_class=Adam):
         weights = Conv2DTrain._init_weights(num_filters=num_filters,
                                             filter_depth=filter_depth,
                                             filter_height=filter_height,

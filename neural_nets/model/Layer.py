@@ -83,3 +83,7 @@ class TrainModeLayerWithWeights(TrainModeLayer):
     @abstractmethod
     def from_params(self, all_params) -> tuple:
         raise NotImplementedError(NOT_IMPLEMENTED)
+
+    @abstractmethod
+    def with_optimizer(self, optimizer_class):
+        raise NotImplementedError(NOT_IMPLEMENTED)

@@ -4,6 +4,7 @@ from numpy import ndarray
 from neural_nets.model.Cache import Cache
 from neural_nets.model.Loss import Loss
 from neural_nets.model.Name import Name
+from neural_nets.model.SwitchOptimizerVisitor import SwitchOptimizerVisitor
 from neural_nets.model.TrainModelInitVisitor import TrainModelInitVisitor
 from neural_nets.model.TrainModelLoadVisitor import TrainModelLoadVisitor
 from neural_nets.model.TrainModelSaveVisitor import TrainModelSaveVisitor
@@ -18,20 +19,25 @@ class TestModel:
     def __init__(self, layers: list):
         self.layers = layers
 
-    def test(self, labels: ndarray, images: ndarray):
+    @staticmethod
+    def eval_accuracy(labels: ndarray, scores: ndarray):
         """
         Computes the accuracy of the model over the image batch.
         :param labels: is a labels of data.
-        :param images: is an image batch to compute accuracy on.
+        :param scores: is a batch of class scores to evaluate accuracy on.
         :return: float value of accuracy in a range [0, 1].
         """
+        predicted_class = np.argmax(scores, axis=1)
+        accuracy = np.mean(predicted_class == labels)
+        return accuracy
+
+    def eval_scores(self, images: ndarray):
         input_data = images
         for layer in self.layers:
             output_data = layer.forward(input_data)
             input_data = output_data
-        predicted_class = np.argmax(input_data, axis=1)
-        accuracy = np.mean(predicted_class == labels)
-        return accuracy
+        scores = input_data
+        return scores
 
     def predict(self, image: ndarray):
         if len(image.shape) == 3:
@@ -51,7 +57,7 @@ class TrainModel:
     """
 
     def __init__(self, layers: list):
-        self.layers = layers
+        self.layers = layers.copy()
 
     def init_model(self) -> list:
         """
@@ -64,7 +70,7 @@ class TrainModel:
         initial_model_forward_run = visitor.get_result()
         return initial_model_forward_run
 
-    def forward(self, model_forward_run: list, images: ndarray) -> tuple:
+    def forward(self, model_forward_run: list, images: ndarray) -> (list, ndarray):
         """
         Runs layer by layer in a forward mode, passing an input data and updating test model parameters.
         :param model_forward_run: is a list of cached parameters required for an optimizer and to build a test model.
@@ -131,3 +137,9 @@ class TrainModel:
         all_params.close()
         layers, model_forward_run = visitor.get_result()
         return TrainModel(layers=layers), model_forward_run
+
+    def with_optimizer(self, optimizer_class):
+        visitor = SwitchOptimizerVisitor(optimizer_class=optimizer_class)
+        for layer in self.layers:
+            layer.accept(visitor)
+        return TrainModel(layers=visitor.get_result())

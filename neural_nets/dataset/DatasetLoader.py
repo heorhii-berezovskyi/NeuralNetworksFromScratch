@@ -1,26 +1,21 @@
 import os
 
 import numpy as np
+from numpy import ndarray
 
 
 class DatasetLoader:
     def __init__(self, directory=''):
         self.directory = directory
 
-    def load(self, train_dataset_name: str, test_dataset_name: str) -> tuple:
+    def load(self, dataset_name: str) -> (ndarray, ndarray):
         """
-        Loads train and test datasets and corresponding labels from npy format.
-        :param train_dataset_name: name of a train dataset file with extension.
-        :param test_dataset_name: name of a test dataset file with extension.
-        :return: tuple, containing train labels, train data, test labels and test data.
+        Loads dataset from npy file and returns labels and data.
+        :param dataset_name: name of a dataset file with extension.
+        :return: tuple, containing labels and data.
         """
-        train_dataset_path = os.path.join(self.directory, train_dataset_name)
-        train_dataset = np.load(train_dataset_path)
-        train_labels = train_dataset[:, 0].astype(np.uint8)
-        train_data = np.delete(train_dataset, 0, axis=1).astype(dtype=np.float64)
-
-        test_dataset_path = os.path.join(self.directory, test_dataset_name)
-        test_dataset = np.load(test_dataset_path)
-        test_labels = test_dataset[:, 0].astype(np.uint8)
-        test_data = np.delete(test_dataset, 0, axis=1).astype(dtype=np.float64)
-        return train_labels, train_data, test_labels, test_data
+        dataset_path = os.path.join(self.directory, dataset_name)
+        dataset = np.load(dataset_path)
+        labels = dataset[:, 0].astype(np.uint8)
+        data = np.delete(dataset, 0, axis=1).astype(dtype=float)
+        return labels, data

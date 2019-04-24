@@ -5,6 +5,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor
+from neural_nets.optimizer.Adam import Adam
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
@@ -88,6 +89,13 @@ class LinearTrain(TrainModeLayerWithWeights):
                            weights=weights,
                            optimizer=new_optimizer), Cache()
 
+    def with_optimizer(self, optimizer_class):
+        return LinearTrain(block_name=self.block_name,
+                           weights=self.weights,
+                           optimizer=optimizer_class.init_memory(
+                               layer_id=self.block_name + LinearTrain.name.value,
+                               weights=self.weights))
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_affine_train(self)
 
@@ -99,7 +107,7 @@ class LinearTrain(TrainModeLayerWithWeights):
         return weights
 
     @classmethod
-    def init(cls, block_name: str, input_dim: int, num_of_neurons: int, optimizer_class):
+    def init(cls, block_name: str, input_dim: int, num_of_neurons: int, optimizer_class=Adam):
         weights = LinearTrain._init_weights(input_dim=input_dim,
                                             num_of_neurons=num_of_neurons)
 

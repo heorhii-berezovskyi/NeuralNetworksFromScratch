@@ -5,6 +5,7 @@ from neural_nets.model.Cache import Cache
 from neural_nets.model.Layer import TrainModeLayerWithWeights, TestModeLayer
 from neural_nets.model.Name import Name
 from neural_nets.model.Visitor import TrainLayerVisitor
+from neural_nets.optimizer.Adam import Adam
 from neural_nets.optimizer.Optimizer import Optimizer
 
 
@@ -144,6 +145,14 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
                                 weights=weights,
                                 optimizer=new_optimizer), params
 
+    def with_optimizer(self, optimizer_class):
+        return BatchNorm2DTrain(block_name=self.block_name,
+                                weights=self.weights,
+                                momentum=self.momentum,
+                                optimizer=optimizer_class.init_memory(
+                                    layer_id=self.block_name + BatchNorm2DTrain.name.value,
+                                    weights=self.weights))
+
     def accept(self, visitor: TrainLayerVisitor):
         visitor.visit_batch_norm_2d_train(self)
 
@@ -155,7 +164,7 @@ class BatchNorm2DTrain(TrainModeLayerWithWeights):
         return weights
 
     @classmethod
-    def init(cls, block_name: str, num_of_channels: int, momentum: float, optimizer_class):
+    def init(cls, block_name: str, num_of_channels: int, momentum: float, optimizer_class=Adam):
         weights = BatchNorm2DTrain._init_weights(num_of_channels=num_of_channels)
         optimizer_instance = optimizer_class.init_memory(layer_id=block_name + BatchNorm2DTrain.name.value,
                                                          weights=weights)
