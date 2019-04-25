@@ -68,3 +68,9 @@ def col2im_indices(cols: ndarray, x_shape: tuple, field_height: int, field_width
     if padding == 0:
         return x_padded
     return x_padded[:, :, padding:-padding, padding:-padding]
+
+
+def noise(image: ndarray, mean=0, std=0.3):
+    noise = np.random.normal(mean, std, image.shape)
+    result = image + noise
+    return result

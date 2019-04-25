@@ -5,16 +5,18 @@ from neural_nets.model.Loss import Loss
 from neural_nets.model.Model import TrainModel
 from neural_nets.utils.DatasetProcessingUtils import sample
 from neural_nets.utils.PlotUtils import plot
+from neural_nets.utils.DatasetProcessingUtils import noise
 
 
 class Trainer:
-    def __init__(self, train_model: TrainModel, model_forward_run: list, loss_function: Loss):
+    def __init__(self, train_model: TrainModel, model_forward_run: list, train_mean: float, loss_function: Loss):
         """
         :param loss_function: is a specified loss function.
         """
         self.train_model = train_model
         self.loss_function = loss_function
         self.model_forward_run = model_forward_run
+        self.train_mean = train_mean
 
     def compile(self):
         """
@@ -22,6 +24,8 @@ class Trainer:
         :return:
         """
         self.model_forward_run = self.train_model.init_model()
+        np.save('losses.npy', np.array([0], dtype=float))
+        np.save('accuracies.npy', np.array([0], dtype=float))
 
     def load_model(self, path: str):
         """
@@ -29,7 +33,8 @@ class Trainer:
         :param path: is a weights file path.
         :return:
         """
-        self.train_model, self.model_forward_run = self.train_model.load(path)
+        self.train_model, self.model_forward_run, train_mean = self.train_model.load(path)
+        self.train_mean = train_mean[0]
 
     def train(self, num_iters: int, batch_size: int, test_batch_size: int, dataset: tuple, image_shape: tuple,
               snapshot: int, snapshot_dir: str):
@@ -46,9 +51,6 @@ class Trainer:
         :return:
         """
 
-        np.save('losses.npy', np.array([0], dtype=float))
-        np.save('accuracies.npy', np.array([0], dtype=float))
-
         train_labels, train_data, test_labels, test_data = dataset
         C, H, W = image_shape
 
@@ -57,6 +59,9 @@ class Trainer:
         for i in range(num_iters):
             train_label_batch, train_image_batch = sample(labels=train_labels, data=train_data, batch_size=batch_size)
             train_image_batch = train_image_batch.reshape((batch_size, C, H, W))
+
+            for m in range(batch_size):
+                train_image_batch[m] = noise(train_image_batch[m])
 
             self.model_forward_run, scores = self.train_model.forward(model_forward_run=self.model_forward_run,
                                                                       images=train_image_batch)
@@ -75,7 +80,7 @@ class Trainer:
                 test_model = self.train_model.to_test(model_forward_run=self.model_forward_run)
 
                 path = snapshot_dir + str(i)
-                self.train_model.save(path=path, model_forward_run=self.model_forward_run)
+                self.train_model.save(path=path, model_forward_run=self.model_forward_run, train_mean=self.train_mean)
                 print('Saved model to: {}'.format(path))
 
                 batch_test_accuracies = []
@@ -84,8 +89,9 @@ class Trainer:
                     test_image_batch = test_data[k * test_batch_size: k * test_batch_size + test_batch_size]
 
                     test_image_batch = test_image_batch.reshape((test_batch_size, C, H, W))
+                    scores = test_model.eval_scores(images=test_image_batch)
                     batch_test_accuracies.append(
-                        test_model.eval_accuracy(labels=test_label_batch, images=test_image_batch))
+                        test_model.eval_accuracy(labels=test_label_batch, scores=scores))
                 test_accuracy = np.mean(batch_test_accuracies)
                 test_accuracies.append(test_accuracy)
                 print('On iteration ' + str(i) + ' test accuracy: ', test_accuracy)

@@ -107,7 +107,7 @@ class TrainModel:
         visitor = WeightsUpdateVisitor(model_backward_run=model_backward_run)
         for layer in reversed(self.layers):
             layer.accept(visitor)
-        return TrainModel(visitor.get_result())
+        return TrainModel(layers=visitor.get_result())
 
     def to_test(self, model_forward_run: list) -> TestModel:
         """
@@ -122,11 +122,12 @@ class TrainModel:
             test_layers.append(test_layer)
         return TestModel(layers=test_layers)
 
-    def save(self, path: str, model_forward_run: list):
+    def save(self, path: str, model_forward_run: list, train_mean: float):
         visitor = TrainModelSaveVisitor(model_forward_run=model_forward_run.copy())
         for layer in reversed(self.layers):
             layer.accept(visitor)
         all_params = visitor.get_result()
+        all_params['train_mean'] = np.array([train_mean])
         np.savez(path, **all_params)
 
     def load(self, path: str) -> tuple:
@@ -134,9 +135,10 @@ class TrainModel:
         visitor = TrainModelLoadVisitor(all_params=all_params)
         for layer in self.layers:
             layer.accept(visitor)
+        train_mean = all_params['train_mean']
         all_params.close()
         layers, model_forward_run = visitor.get_result()
-        return TrainModel(layers=layers), model_forward_run
+        return TrainModel(layers=layers), model_forward_run, train_mean[0]
 
     def with_optimizer(self, optimizer_class):
         visitor = SwitchOptimizerVisitor(optimizer_class=optimizer_class)
