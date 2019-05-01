@@ -3,9 +3,9 @@ import argparse
 from neural_nets.dataset.DatasetLoader import DatasetLoader
 from neural_nets.model.CrossEntropyLoss import CrossEntropyLoss
 from neural_nets.optimizer.Adam import Adam
+from neural_nets.run.ModelSelector import ModelSelector
 from neural_nets.run.Trainer import Trainer
 from neural_nets.utils.DatasetProcessingUtils import remove_mean_on_train, remove_mean_on_test
-from neural_nets.run.ModelSelector import ModelSelector
 from neural_nets.utils.OptimizerSelector import OptimizerSelector
 
 
@@ -53,15 +53,16 @@ def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Trains specified model with specified parameters.')
     parser.add_argument("--train_dataset_path", type=str, help="Train data set path with .npy format.",
-                        default=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv\fmnist_train.npy')
+                        default=r'C:\Users\ГеоргійБерезовський\Documents\NN_from_scratch\dataset\fmnist_train.npy')
 
     parser.add_argument("--test_dataset_path", type=str, help="Test data set path with .npy format.",
-                        default=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv\fmnist_test.npy')
+                        default=r'C:\Users\ГеоргійБерезовський\Documents\NN_from_scratch\dataset\fmnist_test.npy')
 
     parser.add_argument("--num_of_channels", type=int, help="Number of channels in a single image.", default=1)
     parser.add_argument("--image_size", type=int, help="Dimension of a square image.", default=28)
 
-    parser.add_argument("--snapshot_from", type=str, help="Path to snapshot to continue training from.", default=' ')
+    parser.add_argument("--snapshot_from", type=str, help="Path to snapshot to continue training from.",
+                        default=r'C:\Users\ГеоргійБерезовський\Documents\NN_from_scratch\models\convnet400.npz')
     parser.add_argument("--optimizer", type=str, help="Optimizer name.", default='')
     parser.add_argument("--learning_rate", type=float, help="Learning rate.", default=0.002)
     parser.add_argument("--model", type=str, help="Model name.", default='convnet')
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, help="Training batch size.", default=64)
     parser.add_argument("--snapshot", type=int, help="Number of iterations after the next snapshot done.", default=100)
     parser.add_argument("--snapshot_dir", type=str, help="Path to a directory to save snapshots.",
-                        default=r'C:\Users\heorhii.berezovskyi\Documents\mnist-in-csv\model\convnet')
+                        default=r'C:\Users\ГеоргійБерезовський\Documents\NN_from_scratch\models\\convnet')
 
     _args = parser.parse_args()
     run(_args)
