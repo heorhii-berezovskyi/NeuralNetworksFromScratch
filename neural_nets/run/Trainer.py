@@ -24,8 +24,6 @@ class Trainer:
         :return:
         """
         self.model_forward_run = self.train_model.init_model()
-        np.save('losses.npy', np.array([0], dtype=float))
-        np.save('accuracies.npy', np.array([0], dtype=float))
 
     def load_model(self, path: str):
         """
@@ -96,13 +94,8 @@ class Trainer:
                 test_accuracies.append(test_accuracy)
                 print('On iteration ' + str(i) + ' test accuracy: ', test_accuracy)
 
-                loss = np.load(file='losses.npy')
-                acc = np.load(file='accuracies.npy')
-                new_loss = np.append(loss, data_loss)
-                new_acc = np.append(acc, test_accuracy)
-
-                np.save('losses.npy', new_loss)
-                np.save('accuracies.npy', new_acc)
+                np.save('losses.npy', np.asarray(losses))
+                np.save('accuracies.npy', np.asarray(test_accuracies))
 
         plot(losses=losses, test_accuracies=test_accuracies)
         plt.show()

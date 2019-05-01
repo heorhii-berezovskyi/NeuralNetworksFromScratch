@@ -59,7 +59,7 @@ class Optimizer:
         raise NotImplementedError(NOT_IMPLEMENTED)
 
 
-class WeightsUpdateVisitor(TrainLayerVisitor):
+class OptimizingVisitor(TrainLayerVisitor):
     def __init__(self, model_backward_run: list):
         self.model_backward_run = model_backward_run
         self.result = []

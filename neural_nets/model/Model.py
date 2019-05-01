@@ -8,7 +8,7 @@ from neural_nets.model.SwitchOptimizerVisitor import SwitchOptimizerVisitor
 from neural_nets.model.TrainModelInitVisitor import TrainModelInitVisitor
 from neural_nets.model.TrainModelLoadVisitor import TrainModelLoadVisitor
 from neural_nets.model.TrainModelSaveVisitor import TrainModelSaveVisitor
-from neural_nets.optimizer.Optimizer import WeightsUpdateVisitor
+from neural_nets.optimizer.Optimizer import OptimizingVisitor
 
 
 class TestModel:
@@ -49,6 +49,16 @@ class TestModel:
             input_data = output_data
         predicted_class = np.argmax(input_data)
         return predicted_class
+
+    def load(self, path: str) -> tuple:
+        all_params = np.load(path)
+        visitor = TrainModelLoadVisitor(all_params=all_params)
+        for layer in self.layers:
+            layer.accept(visitor)
+        train_mean = all_params['train_mean']
+        all_params.close()
+        layers, model_forward_run = visitor.get_result()
+        return TrainModel(layers=layers), model_forward_run, train_mean[0]
 
 
 class TrainModel:
@@ -104,7 +114,7 @@ class TrainModel:
 
     def optimize(self, model_backward_run: list):
         model_backward_run.reverse()
-        visitor = WeightsUpdateVisitor(model_backward_run=model_backward_run)
+        visitor = OptimizingVisitor(model_backward_run=model_backward_run)
         for layer in reversed(self.layers):
             layer.accept(visitor)
         return TrainModel(layers=visitor.get_result())
