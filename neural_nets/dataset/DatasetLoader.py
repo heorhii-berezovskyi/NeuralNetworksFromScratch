@@ -1,15 +1,17 @@
+import os
+
 import numpy as np
 from numpy import ndarray
 
 
 class DatasetLoader:
-    def load(self, path: str) -> (ndarray, ndarray):
-        """
-        Loads dataset from npy file and returns labels and data.
-        :param dataset_name: name of a dataset file with extension.
-        :return: tuple, containing labels and data.
-        """
-        dataset = np.load(path)
-        labels = dataset[:, 0].astype(np.uint8)
-        data = np.delete(dataset, 0, axis=1).astype(dtype=float)
-        return labels, data
+    def __init__(self, dataset_directory: str):
+        self.dir = dataset_directory
+
+    def load(self, type: str) -> (ndarray, ndarray):
+        data_path = os.path.join(self.dir, type + '_data.npy')
+        data = np.load(data_path)
+
+        labels_path = os.path.join(self.dir, type + '_labels.npy')
+        labels = np.load(labels_path)
+        return labels.astype(np.uint8), data.astype(float)

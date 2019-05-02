@@ -13,3 +13,4 @@ class ModelSelector:
             return module.net()
         except:
             raise ParamNotFoundException('Model with name ' + name + ' not found.')
+

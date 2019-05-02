@@ -1,10 +1,32 @@
+import os
+
 import numpy as np
-from os.path import join
+from numpy import ndarray
 
 
 class DatasetFormatter:
-    def to_npy(self, folder_path: str, file_name: str, new_name: str):
-        path = join(folder_path, file_name)
-        dataset = np.genfromtxt(path, delimiter=',', skip_header=1, dtype=np.uint8)
-        new_path = join(folder_path, new_name)
-        np.save(new_path, dataset)
+    """
+     Converts data set from csv to .npy format.
+    """
+
+    def __init__(self, num_of_channels: int, image_size: int):
+        self.num_of_channels = num_of_channels
+        self.image_size = image_size
+
+    def to_npy(self, dataset_path: str, new_dir: str, split_name: str, skip_header=0):
+        dataset = self._load(path_from=dataset_path, skip_header=skip_header)
+        labels, data = self._split_into_labels_and_data(dataset=dataset)
+        data = data.reshape((labels.size, self.num_of_channels, self.image_size, self.image_size))
+
+        np.save(os.path.join(new_dir, (split_name + '_data')), data)
+        np.save(os.path.join(new_dir, (split_name + '_labels')), labels)
+
+    @staticmethod
+    def _load(path_from: str, skip_header=0):
+        return np.genfromtxt(path_from, delimiter=',', skip_header=skip_header, dtype=np.uint8)
+
+    @staticmethod
+    def _split_into_labels_and_data(dataset: ndarray) -> (ndarray, ndarray):
+        labels = dataset[:, 0]
+        data = dataset[:, 1:]
+        return labels, data
