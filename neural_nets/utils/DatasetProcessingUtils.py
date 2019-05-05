@@ -2,18 +2,18 @@ import numpy as np
 from numpy import ndarray
 
 
-def remove_mean_on_train(train_data: ndarray) -> tuple:
+def remove_mean_on_train(train_data: ndarray) -> (ndarray, float):
     train_mean = np.mean(train_data, dtype=float)
     train_data -= train_mean
     return train_data, train_mean
 
 
-def remove_mean_on_test(test_data: ndarray, train_mean: float):
+def remove_mean_on_test(test_data: ndarray, train_mean: float) -> ndarray:
     test_data -= train_mean
     return test_data
 
 
-def sample(labels: ndarray, data: ndarray, batch_size: int) -> tuple:
+def sample(labels: ndarray, data: ndarray, batch_size: int) -> (ndarray, ndarray):
     idx = np.random.choice(np.arange(len(labels)), batch_size, replace=False)
     return labels[idx], data[idx]
 
@@ -70,7 +70,7 @@ def col2im_indices(cols: ndarray, x_shape: tuple, field_height: int, field_width
     return x_padded[:, :, padding:-padding, padding:-padding]
 
 
-def noise(image: ndarray, mean=0, std=0.3):
+def noise(image: ndarray, mean=0, std=0.3) -> ndarray:
     noise = np.random.normal(mean, std, image.shape)
     result = image + noise
     return result

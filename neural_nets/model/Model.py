@@ -50,15 +50,11 @@ class TestModel:
         predicted_class = np.argmax(input_data)
         return predicted_class
 
-    def load(self, path: str) -> tuple:
-        all_params = np.load(path)
-        visitor = TrainModelLoadVisitor(all_params=all_params)
-        for layer in self.layers:
-            layer.accept(visitor)
-        train_mean = all_params['train_mean']
-        all_params.close()
-        layers, model_forward_run = visitor.get_result()
-        return TrainModel(layers=layers), model_forward_run, train_mean[0]
+    @classmethod
+    def load(cls, path: str, train_model) -> tuple:
+        train_model, model_forward_run, train_mean = train_model.load(path)
+        test_model = train_model.to_test(model_forward_run=model_forward_run)
+        return test_model, train_mean
 
 
 class TrainModel:
