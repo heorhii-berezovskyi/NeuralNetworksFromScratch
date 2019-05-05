@@ -14,8 +14,8 @@ class Dropout1DTest(TestModeLayer):
         return output_data
 
 
-class Dropout1DTrain(TrainModeLayer):
-    name = Name.DROPOUT1D_TRAIN
+class Dropout1D(TrainModeLayer):
+    name = Name.DROPOUT1D
 
     def __init__(self, keep_active_prob: float):
         self.p = keep_active_prob

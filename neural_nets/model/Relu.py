@@ -14,8 +14,8 @@ class ReluTest(TestModeLayer):
         return output
 
 
-class ReluTrain(TrainModeLayer):
-    name = Name.RELU_TRAIN
+class Relu(TrainModeLayer):
+    name = Name.RELU
 
     def forward(self, input_data: ndarray, layer_forward_run: Cache) -> Cache:
         output_data = np.maximum(0.0, input_data)

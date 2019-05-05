@@ -20,8 +20,8 @@ class LinearTest(TestModeLayer):
         return output_data
 
 
-class LinearTrain(TrainModeLayerWithWeights):
-    name = Name.LINEAR_TRAIN
+class Linear(TrainModeLayerWithWeights):
+    name = Name.LINEAR
 
     def __init__(self, block_name: str, weights: Cache, optimizer: Optimizer):
         super().__init__(block_name=block_name)
@@ -57,12 +57,12 @@ class LinearTrain(TrainModeLayerWithWeights):
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return LinearTrain(block_name=self.block_name,
-                           weights=new_weights,
-                           optimizer=new_optimizer)
+        return Linear(block_name=self.block_name,
+                      weights=new_weights,
+                      optimizer=new_optimizer)
 
     def content(self, layer_forward_run: Cache) -> dict:
-        layer_id = self.block_name + LinearTrain.name.value
+        layer_id = self.block_name + Linear.name.value
         result = {}
 
         for w_name in self.weights.get_keys():
@@ -75,7 +75,7 @@ class LinearTrain(TrainModeLayerWithWeights):
         return result
 
     def from_params(self, all_params) -> tuple:
-        layer_id = self.block_name + LinearTrain.name.value
+        layer_id = self.block_name + Linear.name.value
 
         weights = Cache()
         for w_name in self.weights.get_keys():
@@ -85,15 +85,15 @@ class LinearTrain(TrainModeLayerWithWeights):
 
         new_optimizer = self.optimizer.from_params(all_params=all_params)
 
-        return LinearTrain(block_name=self.block_name,
-                           weights=weights,
-                           optimizer=new_optimizer), Cache()
+        return Linear(block_name=self.block_name,
+                      weights=weights,
+                      optimizer=new_optimizer), Cache()
 
     def with_optimizer(self, optimizer_class):
-        return LinearTrain(block_name=self.block_name,
-                           weights=self.weights,
-                           optimizer=optimizer_class.init_memory(
-                               layer_id=self.block_name + LinearTrain.name.value,
+        return Linear(block_name=self.block_name,
+                      weights=self.weights,
+                      optimizer=optimizer_class.init_memory(
+                               layer_id=self.block_name + Linear.name.value,
                                weights=self.weights))
 
     def accept(self, visitor: TrainLayerVisitor):
@@ -108,10 +108,10 @@ class LinearTrain(TrainModeLayerWithWeights):
 
     @classmethod
     def init(cls, block_name: str, input_dim: int, num_of_neurons: int, optimizer_class=Adam):
-        weights = LinearTrain._init_weights(input_dim=input_dim,
-                                            num_of_neurons=num_of_neurons)
+        weights = Linear._init_weights(input_dim=input_dim,
+                                       num_of_neurons=num_of_neurons)
 
-        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + LinearTrain.name.value,
+        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + Linear.name.value,
                                                          weights=weights)
         return cls(block_name=block_name,
                    weights=weights,

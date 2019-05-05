@@ -3,14 +3,14 @@ from enum import Enum
 
 class Name(Enum):
     # Layer names.
-    LINEAR_TRAIN = 'linear_train'
-    RELU_TRAIN = 'relu_train'
-    BATCH_NORM_1D_TRAIN = 'batchnorm1d_train'
-    BATCH_NORM_2D_TRAIN = 'batchnorm2d_train'
-    DROPOUT1D_TRAIN = 'dropout1d_train'
-    DROPOUT2D_TRAIN = 'dropout2d_train'
-    CONV2D_TRAIN = 'conv2d_train'
-    MAX_POOL_TRAIN = 'maxpool_train'
+    LINEAR = 'linear_train'
+    RELU = 'relu_train'
+    BATCH_NORM_1D = 'batchnorm1d_train'
+    BATCH_NORM_2D = 'batchnorm2d_train'
+    DROPOUT1D = 'dropout1d_train'
+    DROPOUT2D = 'dropout2d_train'
+    CONV2D = 'conv2d_train'
+    MAX_POOL = 'maxpool_train'
 
     WEIGHTS = 'weights'
     BIASES = 'biases'

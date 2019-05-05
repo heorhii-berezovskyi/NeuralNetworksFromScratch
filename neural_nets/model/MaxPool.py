@@ -32,8 +32,8 @@ class MaxPoolTest(TestModeLayer):
         return out
 
 
-class MaxPoolTrain(TrainModeLayer):
-    name = Name.MAX_POOL_TRAIN
+class MaxPool(TrainModeLayer):
+    name = Name.MAX_POOL
 
     def __init__(self, pool_height: int, pool_width: int, stride: int):
         self.pool_height = pool_height

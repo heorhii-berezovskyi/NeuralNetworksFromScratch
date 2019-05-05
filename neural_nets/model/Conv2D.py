@@ -49,8 +49,8 @@ class Conv2DTest(TestModeLayer):
         return output_data
 
 
-class Conv2DTrain(TrainModeLayerWithWeights):
-    name = Name.CONV2D_TRAIN
+class Conv2D(TrainModeLayerWithWeights):
+    name = Name.CONV2D
 
     def __init__(self, block_name: str, weights: Cache, stride: int, padding: int, optimizer: Optimizer):
         super().__init__(block_name=block_name)
@@ -131,14 +131,14 @@ class Conv2DTrain(TrainModeLayerWithWeights):
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return Conv2DTrain(block_name=self.block_name,
-                           weights=new_weights,
-                           stride=self.stride,
-                           padding=self.padding,
-                           optimizer=new_optimizer)
+        return Conv2D(block_name=self.block_name,
+                      weights=new_weights,
+                      stride=self.stride,
+                      padding=self.padding,
+                      optimizer=new_optimizer)
 
     def content(self, layer_forward_run: Cache) -> dict:
-        layer_id = self.block_name + Conv2DTrain.name.value
+        layer_id = self.block_name + Conv2D.name.value
         result = {}
 
         for w_name in self.weights.get_keys():
@@ -151,7 +151,7 @@ class Conv2DTrain(TrainModeLayerWithWeights):
         return result
 
     def from_params(self, all_params) -> tuple:
-        layer_id = self.block_name + Conv2DTrain.name.value
+        layer_id = self.block_name + Conv2D.name.value
 
         weights = Cache()
         for w_name in self.weights.get_keys():
@@ -161,19 +161,19 @@ class Conv2DTrain(TrainModeLayerWithWeights):
 
         new_optimizer = self.optimizer.from_params(all_params=all_params)
 
-        return Conv2DTrain(block_name=self.block_name,
-                           stride=self.stride,
-                           padding=self.padding,
-                           weights=weights,
-                           optimizer=new_optimizer), Cache()
+        return Conv2D(block_name=self.block_name,
+                      stride=self.stride,
+                      padding=self.padding,
+                      weights=weights,
+                      optimizer=new_optimizer), Cache()
 
     def with_optimizer(self, optimizer_class):
-        return Conv2DTrain(block_name=self.block_name,
-                           weights=self.weights,
-                           stride=self.stride,
-                           padding=self.padding,
-                           optimizer=optimizer_class.init_memory(
-                               layer_id=self.block_name + Conv2DTrain.name.value,
+        return Conv2D(block_name=self.block_name,
+                      weights=self.weights,
+                      stride=self.stride,
+                      padding=self.padding,
+                      optimizer=optimizer_class.init_memory(
+                               layer_id=self.block_name + Conv2D.name.value,
                                weights=self.weights))
 
     def accept(self, visitor: TrainLayerVisitor):
@@ -198,12 +198,12 @@ class Conv2DTrain(TrainModeLayerWithWeights):
              stride: int,
              padding: int,
              optimizer_class=Adam):
-        weights = Conv2DTrain._init_weights(num_filters=num_filters,
-                                            filter_depth=filter_depth,
-                                            filter_height=filter_height,
-                                            filter_width=filter_width)
+        weights = Conv2D._init_weights(num_filters=num_filters,
+                                       filter_depth=filter_depth,
+                                       filter_height=filter_height,
+                                       filter_width=filter_width)
 
-        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + Conv2DTrain.name.value,
+        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + Conv2D.name.value,
                                                          weights=weights)
         return cls(block_name=block_name,
                    weights=weights,

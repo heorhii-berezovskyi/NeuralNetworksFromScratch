@@ -24,8 +24,8 @@ class BatchNorm1DTest(TestModeLayer):
         return output_data
 
 
-class BatchNorm1DTrain(TrainModeLayerWithWeights):
-    name = Name.BATCH_NORM_1D_TRAIN
+class BatchNorm1D(TrainModeLayerWithWeights):
+    name = Name.BATCH_NORM_1D
 
     def __init__(self, block_name: str, weights: Cache, momentum: float, optimizer: Optimizer):
         super().__init__(block_name=block_name)
@@ -77,10 +77,10 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
     def optimize(self, layer_backward_run: Cache) -> TrainModeLayerWithWeights:
         new_optimizer = self.optimizer.update_memory(layer_backward_run=layer_backward_run)
         new_weights = new_optimizer.update_weights(self.weights)
-        return BatchNorm1DTrain(weights=new_weights,
-                                momentum=self.momentum,
-                                optimizer=new_optimizer,
-                                block_name=self.block_name)
+        return BatchNorm1D(weights=new_weights,
+                           momentum=self.momentum,
+                           optimizer=new_optimizer,
+                           block_name=self.block_name)
 
     def to_test(self, layer_forward_run: Cache) -> TestModeLayer:
         params = Cache()
@@ -90,7 +90,7 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
                                params=params)
 
     def content(self, layer_forward_run: Cache) -> dict:
-        layer_id = self.block_name + BatchNorm1DTrain.name.value
+        layer_id = self.block_name + BatchNorm1D.name.value
         result = {}
 
         for w_name in self.weights.get_keys():
@@ -108,7 +108,7 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
         return result
 
     def from_params(self, all_params) -> tuple:
-        layer_id = self.block_name + BatchNorm1DTrain.name.value
+        layer_id = self.block_name + BatchNorm1D.name.value
 
         weights = Cache()
         for w_name in self.weights.get_keys():
@@ -124,17 +124,17 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
 
         new_optimizer = self.optimizer.from_params(all_params=all_params)
 
-        return BatchNorm1DTrain(block_name=self.block_name,
-                                momentum=self.momentum,
-                                weights=weights,
-                                optimizer=new_optimizer), params
+        return BatchNorm1D(block_name=self.block_name,
+                           momentum=self.momentum,
+                           weights=weights,
+                           optimizer=new_optimizer), params
 
     def with_optimizer(self, optimizer_class):
-        return BatchNorm1DTrain(block_name=self.block_name,
-                                weights=self.weights,
-                                momentum=self.momentum,
-                                optimizer=optimizer_class.init_memory(
-                                    layer_id=self.block_name + BatchNorm1DTrain.name.value,
+        return BatchNorm1D(block_name=self.block_name,
+                           weights=self.weights,
+                           momentum=self.momentum,
+                           optimizer=optimizer_class.init_memory(
+                                    layer_id=self.block_name + BatchNorm1D.name.value,
                                     weights=self.weights))
 
     def accept(self, visitor: TrainLayerVisitor):
@@ -149,8 +149,8 @@ class BatchNorm1DTrain(TrainModeLayerWithWeights):
 
     @classmethod
     def init(cls, block_name: str, input_dim: int, momentum: float, optimizer_class=Adam):
-        weights = BatchNorm1DTrain._init_weights(input_dim=input_dim)
-        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + BatchNorm1DTrain.name.value,
+        weights = BatchNorm1D._init_weights(input_dim=input_dim)
+        optimizer_instance = optimizer_class.init_memory(layer_id=block_name + BatchNorm1D.name.value,
                                                          weights=weights)
         return cls(block_name=block_name,
                    weights=weights,
